@@ -6,6 +6,15 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@utils/*": ["utils/*"],
+      "@models/*": ["models/*"],
+      "@controllers/*": ["controllers/*"],
+      "@services/*": ["services/*"],
+      "@ctypes/*": ["types/*"]
+    }
+  },
+  "include": ["src"]
 }

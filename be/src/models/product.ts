@@ -1,0 +1,51 @@
+import { ProductVariant } from "@ctypes/product_variant";
+import mongoose, { Schema, Document, Model } from "mongoose";
+
+export interface IProduct extends Document {
+  name: string;
+  description: string;
+  brand: string;
+  category: string;
+  status: "available" | "out_of_stock";
+  variants: ProductVariant[];
+}
+
+class ProductModel {
+  private model: Model<IProduct>;
+
+  constructor() {
+    this.model = mongoose.model<IProduct>(
+      "products",
+      new Schema<IProduct>(
+        {
+          name: { type: String, required: true },
+          description: { type: String, required: true },
+          brand: { type: String, required: true },
+          category: { type: String, required: true },
+          status: {
+            type: String,
+            required: true,
+            enum: ["available", "out_of_stock"],
+          },
+          variants: [
+            {
+              variantId: { type: Schema.Types.ObjectId, required: true },
+              size: { type: String, required: true },
+              color: { type: String, required: true },
+              sku: { type: String, required: true, unique: true },
+              price: { type: Number, required: true },
+              stock: { type: Number, default: 0 },
+            },
+          ],
+        },
+        { timestamps: true }
+      )
+    );
+  }
+
+  getModel(): Model<IProduct> {
+    return this.model;
+  }
+}
+
+export default new ProductModel();
