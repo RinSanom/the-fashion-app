@@ -17,11 +17,11 @@ jobs:
 
           COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/[*_`\[\]]/\\&/g')
 
-          curl -v -X POST "https://api.telegram.org/bot8576542451:AAFBAKWcPK4h_8JUVmjJGGm6-TbcR7xyWo0/sendMessage" \
+          curl -v -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -H "Content-Type: application/json" \
             -d "{
-              \"chat_id\": \"-1003554258940\",
-              \"message_thread_id\": 9,
+              \"chat_id\": \"${{ secrets.TELEGRAM_CHAT_ID }}\",
+              \"message_thread_id\": ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }},
               \"parse_mode\": \"Markdown\",
               \"text\": \"🚀 *GitHub Push Alert*\n👤 Author: ${AUTHOR}\n📦 Repo: ${REPO}\n🌿 Branch: ${BRANCH}\n📝 Commit: ${COMMIT_MSG}\"
             }"
