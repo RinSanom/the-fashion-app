@@ -17,7 +17,7 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           COMMIT="${{ github.event.head_commit.message }}"
 
-          MESSAGE="🚀 *GitHub Push Alert*%0A👤 Author: ${AUTHOR}%0A📦 Repo: ${REPO}%0A🌿 Branch: ${BRANCH}%0A📝 Commit: ${COMMIT}"
+          MESSAGE="*GitHub Push Alert*%0A👤 Author: ${AUTHOR}%0A📦 Repo: ${REPO}%0A🌿 Branch: ${BRANCH}%0A📝 Commit: ${COMMIT}"
 
           curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
