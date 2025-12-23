@@ -12,29 +12,16 @@ jobs:
     steps:
       - name: Send Telegram notification
         run: |
-          echo "Sending notification..."
-          echo "Bot Token: ${{ secrets.TELEGRAM_BOT_TOKEN != '' && 'Set ✓' || 'Missing ✗' }}"
-          echo "Chat ID: ${{ secrets.TELEGRAM_CHAT_ID != '' && 'Set ✓' || 'Missing ✗' }}"
-          echo "Topic ID: ${{ secrets.TELEGRAM_TOPIC_ID != '' && 'Set ✓' || 'Missing ✗' }}"
-
           AUTHOR="${{ github.actor }}"
           REPO="${{ github.repository }}"
           BRANCH="${{ github.ref_name }}"
-          COMMIT="${{ github.event.head_commit.message }}"
+          COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/[*_`\[\]]/\\&/g')
 
-          MESSAGE="🚀 *GitHub Push Alert*%0A👤 Author: ${AUTHOR}%0A📦 Repo: ${REPO}%0A🌿 Branch: ${BRANCH}%0A📝 Commit: ${COMMIT}"
-
-          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot8576542451:AAFBAKWcPK4h_8JUVmjJGGm6-TbcR7xyWo0/sendMessage" \
-            -d "chat_id=-1003554258940" \
-            -d "message_thread_id=9" \
-            -d "parse_mode=Markdown" \
-            -d "text=${MESSAGE}")
-
-          echo "Response: $RESPONSE"
-
-          if echo "$RESPONSE" | grep -q '"ok":true'; then
-            echo "✓ Notification sent successfully!"
-          else
-            echo "✗ Failed to send notification"
-            exit 1
-          fi
+          curl -v -X POST "https://api.telegram.org/bot8576542451:AAFBAKWcPK4h_8JUVmjJGGm6-TbcR7xyWo0/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"chat_id\": \"-1003554258940\",
+              \"message_thread_id\": 9,
+              \"parse_mode\": \"Markdown\",
+              \"text\": \"🚀 *GitHub Push Alert*\n👤 Author: ${AUTHOR}\n📦 Repo: ${REPO}\n🌿 Branch: ${BRANCH}\n📝 Commit: ${COMMIT_MSG}\"
+            }"
