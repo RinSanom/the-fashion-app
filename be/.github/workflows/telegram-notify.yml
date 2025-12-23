@@ -8,14 +8,13 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-
     steps:
       - name: Send Telegram notification
         run: |
           AUTHOR="${{ github.actor }}"
           REPO="${{ github.repository }}"
           BRANCH="${{ github.ref_name }}"
-          
+
           COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/[*_`\[\]]/\\&/g')
 
           curl -v -X POST "https://api.telegram.org/bot8576542451:AAFBAKWcPK4h_8JUVmjJGGm6-TbcR7xyWo0/sendMessage" \
