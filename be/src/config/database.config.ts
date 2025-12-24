@@ -5,7 +5,8 @@ class DBConfig {
 
   constructor() {
     this.mongoURI =
-      process.env.MONGO_URI || "mongodb://localhost:27017/theFashionAppDB";
+      process.env.MONGO_URI ||
+      "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
   }
 
   public connectDB = async (mongo: Mongoose) => {
