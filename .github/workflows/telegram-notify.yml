@@ -1,0 +1,27 @@
+name: Telegram Push Notification
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        run: |
+          AUTHOR="${{ github.actor }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+
+          COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/[*_`\[\]]/\\&/g')
+
+          curl -v -X POST "https://api.telegram.org/bot8576542451:AAFBAKWcPK4h_8JUVmjJGGm6-TbcR7xyWo0/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"chat_id\": \"-1003554258940\",
+              \"message_thread_id\": 9,
+              \"parse_mode\": \"Markdown\",
+              \"text\": \"🚀 *GitHub Push Alert*\n👤 Author: ${AUTHOR}\n📦 Repo: ${REPO}\n🌿 Branch: ${BRANCH}\n📝 Commit: ${COMMIT_MSG}\"
+            }"
