@@ -1,17 +1,26 @@
-import { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 class DBConfig {
   public mongoURI: string;
 
   constructor() {
     this.mongoURI =
-      process.env.MONGO_URI || "mongodb://localhost:27017/theFashionAppDB";
+      process.env.DB_URI || "mongodb://localhost:27017/theFashionAppDB";
   }
 
-  public connectDB = async (mongo: Mongoose) => {
+  public connectDB = async () => {
     try {
-      await mongo.connect(this.mongoURI);
+      const options: any = {
+        authSource: process.env.MONGO_AUTH_DB || "admin",
+        serverSelectionTimeoutMS:
+          Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 10000,
+      };
+
+      await mongoose.connect(this.mongoURI, options);
+
+      console.info("Database connected successfully.");
     } catch (err) {
+      console.error("Failed to connect to MongoDB:", err);
       process.exit(1);
     }
   };

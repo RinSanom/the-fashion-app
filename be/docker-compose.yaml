@@ -6,7 +6,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: superuser
       MONGO_INITDB_DATABASE: theFashionAppDB
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo-data:/data/db
 

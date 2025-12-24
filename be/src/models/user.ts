@@ -6,6 +6,7 @@ export interface IUser extends Document {
   fullName: string;
   email: string;
   passwordHash: string | null;
+  gender: string;
   role: "user" | "admin";
   status: "active" | "banned";
   oauthProviders: OauthProvider[];
@@ -24,6 +25,7 @@ class UserModel {
           email: { type: String, required: true, unique: true },
           passwordHash: { type: String, default: null },
           role: { type: String, required: true, enum: ["user", "admin"] },
+          gender: { type: String, default: "not_specified" },
           status: {
             type: String,
             required: true,
