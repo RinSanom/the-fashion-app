@@ -11,6 +11,16 @@
   "author": "Vanneth Yann && Rin Sanom",
   "license": "ISC",
   "type": "commonjs",
+  "_moduleAliases": {
+    "@utils": "./src/utils",
+    "@models": "./src/models",
+    "@controllers": "./src/controllers",
+    "@services": "./src/services",
+    "@ctypes": "./src/types",
+    "@dtos": "./src/dtos",
+    "@exceptions": "./src/exceptions",
+    "@middlewares": "./src/middlewares"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -19,6 +29,7 @@
     "express-validator": "^7.3.1",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
+    "module-alias": "^2.2.3",
     "mongoose": "^9.0.1",
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
