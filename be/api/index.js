@@ -1,20 +1,19 @@
-import "module-alias/register";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import serverless from "serverless-http";
-import dotenv from "dotenv";
+require("module-alias/register");
+const serverless = require("serverless-http");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
 // Ensure DB is connected in serverless environment
 let isConnected = false;
-let app: any = null;
+let app = null;
 
 async function getApp() {
   if (!app) {
     try {
-      // Dynamic import to ensure proper module resolution
-      const appModule = await import("../src/app");
-      const dbConfig = await import("../src/config/database.config");
+      // ✅ IMPORTANT: use dist/, NOT src/
+      const appModule = await import("../dist/app.js");
+      const dbConfig = await import("../dist/config/database.config.js");
 
       if (!isConnected) {
         await dbConfig.default.connectDB();
@@ -31,15 +30,16 @@ async function getApp() {
   return app;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   try {
     const expressApp = await getApp();
     const expressHandler = serverless(expressApp);
     return expressHandler(req, res);
-  } catch (err: any) {
+  } catch (err) {
     console.error("Handler error:", err);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", message: err.message });
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: err.message,
+    });
   }
-}
+};

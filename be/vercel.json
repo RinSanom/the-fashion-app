@@ -6,11 +6,12 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node",
-      "config": { "includeFiles": ["src/**", "dist/**"] }
+      "config": {
+        "includeFiles": ["dist/**"]
+      }
     }
   ],
   "routes": [
-    { "src": "/api/v1/(.*)", "dest": "/api/index.js" },
-    { "src": "/(.*)", "dest": "/api/index.js" }
+    { "src": "/api/v1/(.*)", "dest": "/api/index.js" }
   ]
 }
