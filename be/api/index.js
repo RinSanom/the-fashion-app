@@ -13,15 +13,19 @@ async function getApp() {
     try {
       // ✅ IMPORTANT: use dist/, NOT src/
       const appModule = await import("../dist/app.js");
-      const dbConfig = await import("../dist/config/database.config.js");
+      const dbConfigModule = await import("../dist/config/database.config.js");
+
+      // Handle both ESM and CJS default export structures
+      const dbConfig =
+        dbConfigModule.default?.default || dbConfigModule.default;
 
       if (!isConnected) {
-        await dbConfig.default.connectDB();
+        await dbConfig.connectDB();
         isConnected = true;
         console.info("Database connected (serverless)");
       }
 
-      app = appModule.default;
+      app = appModule.default?.default || appModule.default;
     } catch (err) {
       console.error("Error initializing app:", err);
       throw err;
