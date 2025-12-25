@@ -1,6 +1,6 @@
 import { ProductVariant } from "@ctypes/product_variant";
 import mongoose, { Schema, Document, Model } from "mongoose";
-import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 
 export interface IProduct extends Document {
   productId: string;
@@ -22,7 +22,7 @@ class ProductModel {
           type: String,
           required: true,
           unique: true,
-          default: () => uuidv4(),
+          default: () => crypto.randomUUID(),
         },
         name: { type: String, required: true },
         description: { type: String, required: true },
