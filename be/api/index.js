@@ -1,4 +1,3 @@
-require("module-alias/register");
 const serverless = require("serverless-http");
 const dotenv = require("dotenv");
 
@@ -19,15 +18,22 @@ async function getApp() {
       const dbConfig =
         dbConfigModule.default?.default || dbConfigModule.default;
 
-      if (!isConnected) {
+      console.log("dbConfig:", typeof dbConfig, Object.keys(dbConfig || {}));
+
+      if (
+        !isConnected &&
+        dbConfig &&
+        typeof dbConfig.connectDB === "function"
+      ) {
         await dbConfig.connectDB();
         isConnected = true;
         console.info("Database connected (serverless)");
       }
 
       app = appModule.default?.default || appModule.default;
+      console.log("app type:", typeof app);
     } catch (err) {
-      console.error("Error initializing app:", err);
+      console.error("Error initializing app:", err.message, err.stack);
       throw err;
     }
   }
