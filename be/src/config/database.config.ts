@@ -9,7 +9,7 @@ class DBConfig {
       "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
   }
 
-  public connectDB = async () => {
+  public async connectDB() {
     try {
       const options: any = {
         authSource: process.env.MONGO_AUTH_DB || "admin",
@@ -24,7 +24,7 @@ class DBConfig {
       console.error("Failed to connect to MongoDB:", err);
       process.exit(1);
     }
-  };
+  }
 }
 
 export default new DBConfig();
