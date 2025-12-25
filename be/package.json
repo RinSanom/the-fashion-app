@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "dev": "bun --watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
+    "vercel-build": "tsc && tsc-alias",
     "start": "bun run dist/server.js"
   },
   "keywords": [],
@@ -51,6 +52,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/uuid": "^11.0.0",
     "@vercel/node": "^5.5.16",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3"
   }
 }
