@@ -7,14 +7,12 @@ class CartServiceImpl implements AddTooCartService {
   async addToCart(data: AddToCartDTO): Promise<ICart> {
     const cartModel = CartModel.getModel();
 
-    // Find existing cart for user
     let cart = await cartModel.findOne({
       userId: new Types.ObjectId(data.userId),
       status: "active",
     });
 
     if (cart) {
-      // Check if item already exists in cart
       const existingItemIndex = cart.item.findIndex((item) => {
         return (
           item.variantId.toString() === data.variantId &&
@@ -24,10 +22,8 @@ class CartServiceImpl implements AddTooCartService {
       });
 
       if (existingItemIndex > -1) {
-        // Update quantity if item exists
         cart.item[existingItemIndex].quantity += data.quantity;
       } else {
-        // Add new item to cart
         cart.item.push({
           productId: new Types.ObjectId(data.productId),
           variantId: new Types.ObjectId(data.variantId),
@@ -40,7 +36,6 @@ class CartServiceImpl implements AddTooCartService {
 
       return await cart.save();
     } else {
-      // Create new cart
       const newCart = new cartModel({
         userId: new Types.ObjectId(data.userId),
         item: [
@@ -59,26 +54,69 @@ class CartServiceImpl implements AddTooCartService {
       return await newCart.save();
     }
   }
-  getCartItemsByUserId(userId: string): Promise<ICart> {
-    throw new Error("Method not implemented.");
+
+  async getCartItemsByUserId(userId: string): Promise<ICart | null> {
+    const cartModel = CartModel.getModel();
+    return await cartModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        status: "active",
+      })
+      .exec();
   }
-  updateCartItemQuantity(
+
+  async updateCartItemQuantity(
     userId: string,
     productId: string,
     variantId: string,
     quantity: number
   ): Promise<ICart> {
-    throw new Error("Method not implemented.");
+    const cartModel = CartModel.getModel();
+    const cart = await cartModel.findOne({
+      userId: new Types.ObjectId(userId),
+      status: "active",
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const itemIndex = cart.item.findIndex((item) => {
+      item.productId.toString() === productId &&
+        item.variantId.toString() === variantId;
+    });
+
+    if (itemIndex === -1) {
+      throw new Error("Item not found in cart");
+    }
+
+    cart.item[itemIndex].quantity = quantity;
+    return await cart.save();
   }
-  removeFromCart(
-    userId: string,
-    productId: string,
-    variantId: string
-  ): Promise<ICart> {
-    throw new Error("Method not implemented.");
+  async removeFromCart(userId: string, variantId: string): Promise<ICart> {
+    const cartModel = CartModel.getModel();
+    const cart = await cartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+      status: "active",
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    cart.item = cart.item.filter(
+      (item) => item.variantId.toString() !== variantId
+    );
+
+    return await cart.save();
   }
-  clearCart(userId: string): Promise<void> {
-    throw new Error("Method not implemented.");
+
+  async clearCart(userId: string): Promise<void> {
+    const cartModel = CartModel.getModel();
+    await cartModel.findOneAndUpdate(
+      { userId: new mongoose.Types.ObjectId(userId), status: "active" },
+      { status: "inactive" }
+    );
   }
 }
 
