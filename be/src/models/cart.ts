@@ -1,10 +1,10 @@
-import mongoose, { Model, ObjectId, Schema } from "mongoose";
+import mongoose, { Model, Schema, Document, Types } from "mongoose";
 
 export interface ICart extends Document {
-  userId: ObjectId;
+  userId: Types.ObjectId;
   item: {
-    productId: ObjectId;
-    variantId: ObjectId;
+    productId: Types.ObjectId;
+    variantId: Types.ObjectId;
     size: string;
     color: string;
     price: number;
