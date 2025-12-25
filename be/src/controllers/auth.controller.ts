@@ -3,16 +3,20 @@ import { Request, Response } from "express";
 import { IAuthService } from "@services/auth.service";
 import authServiceImpl from "@services/impl/auth.service.impl";
 import { loginRequest } from "@dtos/request/login.request";
-
+import passport from "passport";
+import google from "passport-google-oauth20";
+import facebook from "passport-facebook";
 class AuthController {
   private authService: IAuthService;
 
-  constructor() {
-    this.authService = new authServiceImpl();
-    this.register = this.register.bind(this);
+  constructor(Service: IAuthService) {
+    this.authService = Service;
     this.login = this.login.bind(this);
+    this.register = this.register.bind(this);
     this.logout = this.logout.bind(this);
     this.refreshToken = this.refreshToken.bind(this);
+    this.continueWithGoogle = this.continueWithGoogle.bind(this);
+    this.continueWithFacebook = this.continueWithFacebook.bind(this);
   }
 
   async register(req: Request, res: Response) {
@@ -38,7 +42,7 @@ class AuthController {
     );
 
     res.status(200).send({
-      message: "Login successful.",
+      message: "Login successful",
       isSuccess: true,
       statusCode: 200,
       data: {
@@ -55,7 +59,6 @@ class AuthController {
       message: "Logout successful.",
       isSuccess: true,
       statusCode: 200,
-      data: null,
     });
   }
 
@@ -65,7 +68,7 @@ class AuthController {
     );
 
     res.status(200).send({
-      message: "Token refreshed successfully.",
+      message: "Token refreshed successfully",
       isSuccess: true,
       statusCode: 200,
       data: {
@@ -80,4 +83,4 @@ class AuthController {
   async continueWithFacebook(req: Request, res: Response) {}
 }
 
-export default new AuthController();
+export default new AuthController(new authServiceImpl());

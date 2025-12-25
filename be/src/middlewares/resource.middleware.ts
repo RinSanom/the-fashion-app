@@ -19,7 +19,9 @@ const routeValidation: RequestHandler = async (
 
   if (
     permitRoutes(req, "POST", "/api/v1/auth/*") ||
-    permitRoutes(req, "GET", "/")
+    permitRoutes(req, "GET", "/") ||
+    permitRoutes(req, "POST", "/api/v1/send-verification-code") ||
+    permitRoutes(req, "POST", "/api/v1/verify-code")
   ) {
     return next();
   }

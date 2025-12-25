@@ -66,6 +66,23 @@ const validationMiddleware = {
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters long"),
   ],
+  OTP_ctr_sendMailVerificationCode: [
+    body("email")
+      .trim()
+      .notEmpty()
+      .withMessage("Email is required")
+      .isEmail()
+      .withMessage("Invalid email address")
+      .normalizeEmail(),
+  ],
+  OTP_ctr_verifyCode: [
+    body("code")
+      .trim()
+      .notEmpty()
+      .withMessage("Verification code is required")
+      .isString()
+      .withMessage("Verification code must be a string"),
+  ],
 };
 
 export const ValidationMiddleware = (
