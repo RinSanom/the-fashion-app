@@ -25,6 +25,67 @@ class AuthServiceImpl implements IAuthService {
     this.model = userModel.getModel();
     this.modelToken = userToken.getModel();
   }
+  async continueWithGoogle(credential: any): Promise<any> {
+    let user = await this.model.findOne({ email: credential._json.email });
+    if (!user) {
+      user = (await this.model.create({
+        fullName: credential._json.name,
+        email: credential._json.email,
+        gender: credential.gender ?? "not_specified",
+        role: credential.role ?? "user",
+        status: "active",
+        passwordHash: await bcrypt.genSalt(10),
+        oauthProviders: [
+          {
+            provider: "google",
+            providerId: credential.sub,
+            linkedAt: new Date(),
+          },
+        ],
+      } as any)) as any;
+    } else {
+      const hasGoogleProvider = user.oauthProviders.find((provider) => {
+        return (
+          provider.provider === "google" &&
+          provider.providerId === credential.sub
+        );
+      });
+
+      if (!hasGoogleProvider) {
+        user.oauthProviders.push({
+          provider: "google",
+          providerId: credential.sub,
+          linkedAt: new Date(),
+        });
+        await user.save();
+      }
+    }
+
+    if (!user) {
+      throw new Error("User creation failed");
+    }
+
+    const access = generateAccessToken(user._id.toString());
+    const refresh = generateRefreshToken(user._id.toString());
+
+    await this.modelToken.findOneAndUpdate(
+      { userId: user._id as any },
+      {
+        tokenHash: await bcrypt.hash(crypto.randomUUID(), 10),
+        expiredAt: new Date(
+          (((await verifyRefreshToken(refresh)) as JwtPayload).exp as number) *
+            1000
+        ),
+      } as any,
+      { upsert: true, new: true }
+    );
+
+    return { access_token: access, refresh_token: refresh };
+  }
+
+  continueWithFacebook(credential: any): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
 
   async login(credential: loginRequest): Promise<any> {
     const user = await this.model.findOne({

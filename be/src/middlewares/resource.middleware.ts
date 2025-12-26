@@ -77,6 +77,8 @@ const routeValidation: RequestHandler = async (
   const user = await userModel.getModel().findById(decoded.id).lean();
   if (!user) throw new ForbiddenException();
 
+  (req as any).user = user;
+
   next();
 };
 

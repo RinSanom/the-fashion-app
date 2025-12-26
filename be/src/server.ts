@@ -8,6 +8,8 @@ import routeValidation from "middlewares/resource.middleware";
 import redis from "ioredis";
 import otpRouter from "routes/otp.router";
 import passport from "passport";
+import "@lib/auth_passport/facebook";
+import "@lib/auth_passport/gmail";
 
 dotenv.config();
 
