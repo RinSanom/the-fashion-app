@@ -1,52 +1,44 @@
 const serverless = require("serverless-http");
-const dotenv = require("dotenv");
+require("dotenv").config();
 
-dotenv.config();
-
-// Ensure DB is connected in serverless environment
 let isConnected = false;
-let app = null;
+let cachedApp = null;
 
 async function getApp() {
-  if (!app) {
+  if (!cachedApp) {
     try {
-      // ✅ IMPORTANT: use dist/, NOT src/
+      // Import compiled files
       const appModule = await import("../dist/app.js");
       const dbConfigModule = await import("../dist/config/database.config.js");
 
-      // Handle both ESM and CJS default export structures
-      const dbConfig =
-        dbConfigModule.default?.default || dbConfigModule.default;
+      const app = appModule.default; // ✅ Express app
+      const dbConfig = dbConfigModule.default; // ✅ DB config object
 
-      console.log("dbConfig:", typeof dbConfig, Object.keys(dbConfig || {}));
+      if (!app || typeof app !== "function") {
+        throw new Error("Express app is not a function");
+      }
 
-      if (
-        !isConnected &&
-        dbConfig &&
-        typeof dbConfig.connectDB === "function"
-      ) {
+      if (!isConnected) {
         await dbConfig.connectDB();
         isConnected = true;
         console.info("Database connected (serverless)");
       }
 
-      app = appModule.default?.default || appModule.default;
-      console.log("app type:", typeof app);
+      cachedApp = app;
     } catch (err) {
-      console.error("Error initializing app:", err.message, err.stack);
+      console.error("App init failed:", err);
       throw err;
     }
   }
-  return app;
+  return cachedApp;
 }
 
-module.exports = async function handler(req, res) {
+module.exports = async (req, res) => {
   try {
-    const expressApp = await getApp();
-    const expressHandler = serverless(expressApp);
-    return expressHandler(req, res);
+    const app = await getApp();
+    return serverless(app)(req, res);
   } catch (err) {
-    console.error("Handler error:", err);
+    console.error("Serverless handler crash:", err);
     res.status(500).json({
       error: "Internal Server Error",
       message: err.message,
