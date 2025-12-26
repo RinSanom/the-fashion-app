@@ -7,14 +7,16 @@ let cachedApp = null;
 async function getApp() {
   if (!cachedApp) {
     try {
-      // Import compiled files
-      const appModule = await import("../dist/app.js");
-      const dbConfigModule = await import("../dist/config/database.config.js");
+      // Import compiled files (CommonJS)
+      const appModule = require("../dist/app.js");
+      const dbConfigModule = require("../dist/config/database.config.js");
 
-      const app = appModule.default; // ✅ Express app
-      const dbConfig = dbConfigModule.default; // ✅ DB config object
+      // Handle both ESM and CommonJS default exports
+      const app = appModule.default || appModule;
+      const dbConfig = dbConfigModule.default || dbConfigModule;
 
       if (!app || typeof app !== "function") {
+        console.error("App module received:", appModule);
         throw new Error("Express app is not a function");
       }
 
