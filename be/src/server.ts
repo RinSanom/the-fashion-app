@@ -4,7 +4,6 @@ import app from "./app";
 
 dotenv.config();
 
-// Connect to MongoDB then start local server (for dev)
 dbConfig
   .connectDB()
   .then(() => {
