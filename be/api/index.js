@@ -17,9 +17,9 @@ async function initializeApp() {
     const app = appModule.default || appModule;
     const dbConfig = dbConfigModule.default || dbConfigModule;
 
-    if (!app || typeof app !== "function") {
+    if (!app) {
       console.error("App module received:", appModule);
-      throw new Error("Express app is not a function");
+      throw new Error("Express app not found");
     }
 
     if (!isConnected) {
