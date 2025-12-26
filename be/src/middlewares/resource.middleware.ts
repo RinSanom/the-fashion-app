@@ -30,58 +30,58 @@ const routeValidation: RequestHandler = async (
       return next();
     }
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new ForbiddenException();
-  }
-
-  const token: string = authHeader.substring(7);
-
-  let decoded = verifyAccessToken(token);
-
-  if (!decoded || decoded?.invalid) {
-    throw new ForbiddenException();
-  }
-
-  if (decoded?.expired) {
-    const refresh_token = req.headers["x-refresh-token"];
-
-    if (!refresh_token) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       throw new ForbiddenException();
     }
 
-    decoded = verifyRefreshToken(refresh_token as string);
+    const token: string = authHeader.substring(7);
 
-    if (!decoded || decoded?.invalid || decoded?.expired) {
+    let decoded = verifyAccessToken(token);
+
+    if (!decoded || decoded?.invalid) {
       throw new ForbiddenException();
     }
 
-    if (decoded && !decoded.expired && !decoded.invalid) {
-      const storedToken = await userToken.getModel().findOne({
-        userId: decoded.id,
-      });
+    if (decoded?.expired) {
+      const refresh_token = req.headers["x-refresh-token"];
 
-      if (!storedToken) {
+      if (!refresh_token) {
         throw new ForbiddenException();
       }
 
-      if (
-        !(await bcrypt.compare(
-          refresh_token as string,
-          storedToken.tokenHash as string
-        ))
-      ) {
+      decoded = verifyRefreshToken(refresh_token as string);
+
+      if (!decoded || decoded?.invalid || decoded?.expired) {
         throw new ForbiddenException();
       }
+
+      if (decoded && !decoded.expired && !decoded.invalid) {
+        const storedToken = await userToken.getModel().findOne({
+          userId: decoded.id,
+        });
+
+        if (!storedToken) {
+          throw new ForbiddenException();
+        }
+
+        if (
+          !(await bcrypt.compare(
+            refresh_token as string,
+            storedToken.tokenHash as string
+          ))
+        ) {
+          throw new ForbiddenException();
+        }
+      }
+
+      const newAccessToken = generateAccessToken(decoded.id);
+      res.setHeader("x-access-token", newAccessToken);
     }
 
-    const newAccessToken = generateAccessToken(decoded.id);
-    res.setHeader("x-access-token", newAccessToken);
-  }
+    const user = await userModel.getModel().findById(decoded.id).lean();
+    if (!user) throw new ForbiddenException();
 
-  const user = await userModel.getModel().findById(decoded.id).lean();
-  if (!user) throw new ForbiddenException();
-
-  next();
+    next();
   } catch (err) {
     next(err);
   }

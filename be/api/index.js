@@ -3,49 +3,47 @@ require("dotenv").config();
 
 let isConnected = false;
 let cachedApp = null;
-let handler = null;
+let cachedHandler = null;
 
-async function getApp() {
-  if (!cachedApp) {
-    try {
-      // Import compiled files (CommonJS)
-      const appModule = require("../dist/app.js");
-      const dbConfigModule = require("../dist/config/database.config.js");
+async function initializeApp() {
+  if (cachedHandler) return cachedHandler;
 
-      // Handle both ESM and CommonJS default exports
-      const app = appModule.default || appModule;
-      const dbConfig = dbConfigModule.default || dbConfigModule;
+  try {
+    // Import compiled files (CommonJS)
+    const appModule = require("../dist/app.js");
+    const dbConfigModule = require("../dist/config/database.config.js");
 
-      if (!app || typeof app !== "function") {
-        console.error("App module received:", appModule);
-        throw new Error("Express app is not a function");
-      }
+    // Handle both ESM and CommonJS default exports
+    const app = appModule.default || appModule;
+    const dbConfig = dbConfigModule.default || dbConfigModule;
 
-      if (!isConnected) {
-        await dbConfig.connectDB();
-        isConnected = true;
-        console.info("Database connected (serverless)");
-      }
-
-      cachedApp = app;
-    } catch (err) {
-      console.error("App init failed:", err);
-      throw err;
+    if (!app || typeof app !== "function") {
+      console.error("App module received:", appModule);
+      throw new Error("Express app is not a function");
     }
+
+    if (!isConnected) {
+      await dbConfig.connectDB();
+      isConnected = true;
+      console.info("Database connected (serverless)");
+    }
+
+    cachedApp = app;
+    cachedHandler = serverless(app);
+    return cachedHandler;
+  } catch (err) {
+    console.error("App init failed:", err);
+    throw err;
   }
-  return cachedApp;
 }
 
 module.exports = async (req, res) => {
   try {
-    const app = await getApp();
-    if (!handler) {
-      handler = serverless(app);
-    }
-    return handler(req, res);
+    const handler = await initializeApp();
+    await handler(req, res);
   } catch (err) {
     console.error("Serverless handler crash:", err);
-    return res.status(500).json({
+    res.status(500).json({
       error: "Internal Server Error",
       message: err.message,
     });
