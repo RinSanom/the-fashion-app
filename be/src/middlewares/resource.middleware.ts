@@ -15,16 +15,20 @@ const routeValidation: RequestHandler = async (
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (
-    permitRoutes(req, "POST", "/api/v1/auth/*") ||
-    permitRoutes(req, "GET", "/") ||
-    permitRoutes(req, "POST", "/api/v1/send-verification-code") ||
-    permitRoutes(req, "POST", "/api/v1/verify-code")
-  ) {
-    return next();
-  }
+    // Debug log for serverless
+    console.log("Request path:", req.path, "Method:", req.method);
+
+    if (
+      permitRoutes(req, "POST", "/api/v1/auth/*") ||
+      permitRoutes(req, "GET", "/") ||
+      permitRoutes(req, "POST", "/api/v1/send-verification-code") ||
+      permitRoutes(req, "POST", "/api/v1/verify-code")
+    ) {
+      return next();
+    }
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new ForbiddenException();
@@ -78,6 +82,9 @@ const routeValidation: RequestHandler = async (
   if (!user) throw new ForbiddenException();
 
   next();
+  } catch (err) {
+    next(err);
+  }
 };
 
 export default routeValidation;

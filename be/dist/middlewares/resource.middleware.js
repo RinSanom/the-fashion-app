@@ -19,47 +19,54 @@ const token_1 = __importDefault(require("../models/token"));
 const permitRoutes_1 = require("../utils/permitRoutes");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const routeValidation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const authHeader = req.headers.authorization;
-    if ((0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/auth/*") ||
-        (0, permitRoutes_1.permitRoutes)(req, "GET", "/") ||
-        (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/send-verification-code") ||
-        (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/verify-code")) {
-        return next();
-    }
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw new forbidden_exception_1.default();
-    }
-    const token = authHeader.substring(7);
-    let decoded = (0, jwtUtils_1.verifyAccessToken)(token);
-    if (!decoded || (decoded === null || decoded === void 0 ? void 0 : decoded.invalid)) {
-        throw new forbidden_exception_1.default();
-    }
-    if (decoded === null || decoded === void 0 ? void 0 : decoded.expired) {
-        const refresh_token = req.headers["x-refresh-token"];
-        if (!refresh_token) {
+    try {
+        const authHeader = req.headers.authorization;
+        // Debug log for serverless
+        console.log("Request path:", req.path, "Method:", req.method);
+        if ((0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/auth/*") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/") ||
+            (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/send-verification-code") ||
+            (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/verify-code")) {
+            return next();
+        }
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
             throw new forbidden_exception_1.default();
         }
-        decoded = (0, jwtUtils_1.verifyRefreshToken)(refresh_token);
-        if (!decoded || (decoded === null || decoded === void 0 ? void 0 : decoded.invalid) || (decoded === null || decoded === void 0 ? void 0 : decoded.expired)) {
+        const token = authHeader.substring(7);
+        let decoded = (0, jwtUtils_1.verifyAccessToken)(token);
+        if (!decoded || (decoded === null || decoded === void 0 ? void 0 : decoded.invalid)) {
             throw new forbidden_exception_1.default();
         }
-        if (decoded && !decoded.expired && !decoded.invalid) {
-            const storedToken = yield token_1.default.getModel().findOne({
-                userId: decoded.id,
-            });
-            if (!storedToken) {
+        if (decoded === null || decoded === void 0 ? void 0 : decoded.expired) {
+            const refresh_token = req.headers["x-refresh-token"];
+            if (!refresh_token) {
                 throw new forbidden_exception_1.default();
             }
-            if (!(yield bcryptjs_1.default.compare(refresh_token, storedToken.tokenHash))) {
+            decoded = (0, jwtUtils_1.verifyRefreshToken)(refresh_token);
+            if (!decoded || (decoded === null || decoded === void 0 ? void 0 : decoded.invalid) || (decoded === null || decoded === void 0 ? void 0 : decoded.expired)) {
                 throw new forbidden_exception_1.default();
             }
+            if (decoded && !decoded.expired && !decoded.invalid) {
+                const storedToken = yield token_1.default.getModel().findOne({
+                    userId: decoded.id,
+                });
+                if (!storedToken) {
+                    throw new forbidden_exception_1.default();
+                }
+                if (!(yield bcryptjs_1.default.compare(refresh_token, storedToken.tokenHash))) {
+                    throw new forbidden_exception_1.default();
+                }
+            }
+            const newAccessToken = (0, jwtUtils_1.generateAccessToken)(decoded.id);
+            res.setHeader("x-access-token", newAccessToken);
         }
-        const newAccessToken = (0, jwtUtils_1.generateAccessToken)(decoded.id);
-        res.setHeader("x-access-token", newAccessToken);
+        const user = yield user_1.default.getModel().findById(decoded.id).lean();
+        if (!user)
+            throw new forbidden_exception_1.default();
+        next();
     }
-    const user = yield user_1.default.getModel().findById(decoded.id).lean();
-    if (!user)
-        throw new forbidden_exception_1.default();
-    next();
+    catch (err) {
+        next(err);
+    }
 });
 exports.default = routeValidation;
