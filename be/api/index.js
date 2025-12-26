@@ -3,6 +3,7 @@ require("dotenv").config();
 
 let isConnected = false;
 let cachedApp = null;
+let handler = null;
 
 async function getApp() {
   if (!cachedApp) {
@@ -38,10 +39,13 @@ async function getApp() {
 module.exports = async (req, res) => {
   try {
     const app = await getApp();
-    return serverless(app)(req, res);
+    if (!handler) {
+      handler = serverless(app);
+    }
+    return handler(req, res);
   } catch (err) {
     console.error("Serverless handler crash:", err);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal Server Error",
       message: err.message,
     });
