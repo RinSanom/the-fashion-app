@@ -20,7 +20,6 @@ export const createApp = () => {
 
   app.use(passport.initialize());
 
-  // Secure route middleware (adjust as needed for serverless)
   app.use(routeValidation);
 
   // Health check - responds immediately without waiting for DB
