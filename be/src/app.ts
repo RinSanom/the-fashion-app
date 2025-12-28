@@ -23,8 +23,14 @@ export const createApp = () => {
   // Secure route middleware (adjust as needed for serverless)
   app.use(routeValidation);
 
-  // Health check
-  app.get("/", (req, res) => res.send("The Fashion App Backend is running!"));
+  // Health check - responds immediately without waiting for DB
+  app.get("/", (req, res) => {
+    res.status(200).json({
+      status: "ok",
+      message: "The Fashion App Backend is running!",
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // Routes
   app.use("/api/v1/auth", authRouter);

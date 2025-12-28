@@ -23,8 +23,14 @@ const createApp = () => {
     app.use(passport_1.default.initialize());
     // Secure route middleware (adjust as needed for serverless)
     app.use(resource_middleware_1.default);
-    // Health check
-    app.get("/", (req, res) => res.send("The Fashion App Backend is running!"));
+    // Health check - responds immediately without waiting for DB
+    app.get("/", (req, res) => {
+        res.status(200).json({
+            status: "ok",
+            message: "The Fashion App Backend is running!",
+            timestamp: new Date().toISOString(),
+        });
+    });
     // Routes
     app.use("/api/v1/auth", auth_router_1.default);
     app.use("/api/v1", product_router_1.default);
