@@ -25,7 +25,13 @@ const routeValidation: RequestHandler = async (
       permitRoutes(req, "POST", "/api/v1/auth/*") ||
       permitRoutes(req, "GET", "/") ||
       permitRoutes(req, "POST", "/api/v1/send-verification-code") ||
-      permitRoutes(req, "POST", "/api/v1/verify-code")
+      permitRoutes(req, "POST", "/api/v1/verify-code") ||
+      permitRoutes(req, "GET", "/api/v1/products") ||
+      permitRoutes(req, "GET", "/api/v1/cart") ||
+      permitRoutes(req, "GET", "/api/v1/cart/*") ||
+      permitRoutes(req, "POST", "/api/v1/order")  ||
+      permitRoutes(req, "POST", "/api/v1/payment") ||
+      permitRoutes(req, "POST", "/api/v1/payment/*") 
     ) {
       return next();
     }

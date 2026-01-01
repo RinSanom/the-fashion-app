@@ -14,6 +14,8 @@ const cart_router_1 = __importDefault(require("./routes/cart.router"));
 const otp_router_1 = __importDefault(require("./routes/otp.router"));
 const resource_middleware_1 = __importDefault(require("./middlewares/resource.middleware"));
 const error_middleware_1 = __importDefault(require("./middlewares/error.middleware"));
+const order_router_1 = __importDefault(require("./routes/order.router"));
+const payment_router_1 = __importDefault(require("./routes/payment.router"));
 dotenv_1.default.config();
 const createApp = () => {
     const app = (0, express_1.default)();
@@ -21,7 +23,6 @@ const createApp = () => {
     app.use(express_1.default.json());
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(passport_1.default.initialize());
-    // Secure route middleware (adjust as needed for serverless)
     app.use(resource_middleware_1.default);
     // Health check - responds immediately without waiting for DB
     app.get("/", (req, res) => {
@@ -36,6 +37,8 @@ const createApp = () => {
     app.use("/api/v1", product_router_1.default);
     app.use("/api/v1", cart_router_1.default);
     app.use("/api/v1", otp_router_1.default);
+    app.use("/api/v1", order_router_1.default);
+    app.use("/api/v1", payment_router_1.default);
     // Global error handler
     app.use(error_middleware_1.default);
     return app;

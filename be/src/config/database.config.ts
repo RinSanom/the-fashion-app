@@ -14,11 +14,9 @@ class DBConfig {
       const options: any = {
         authSource: process.env.MONGO_AUTH_DB || "admin",
         serverSelectionTimeoutMS:
-          Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 8000,
-        connectTimeoutMS: 8000,
-        socketTimeoutMS: 15000,
-        maxPoolSize: 1, // Serverless: use minimal connections
-        minPoolSize: 0,
+          Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 10000,
       };
 
       await mongoose.connect(this.mongoURI, options);

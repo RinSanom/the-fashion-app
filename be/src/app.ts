@@ -8,6 +8,8 @@ import cartRouter from "./routes/cart.router";
 import otpRouter from "./routes/otp.router";
 import routeValidation from "./middlewares/resource.middleware";
 import errorHandler from "./middlewares/error.middleware";
+import orderRouter from "routes/order.router";
+import paymentRouter from "routes/payment.router";
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ export const createApp = () => {
   app.use("/api/v1", productRouter);
   app.use("/api/v1", cartRouter);
   app.use("/api/v1", otpRouter);
+  app.use("/api/v1", orderRouter);
+  app.use("/api/v1", paymentRouter);
 
   // Global error handler
   app.use(errorHandler);

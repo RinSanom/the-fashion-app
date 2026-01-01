@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
     await Promise.race([handlerPromise, timeoutPromise]);
   } catch (err) {
     console.error("Serverless handler crash:", err);
-    
+
     // Check if response already sent
     if (!res.headersSent) {
       res.status(500).json({

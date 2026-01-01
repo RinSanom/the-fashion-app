@@ -56,7 +56,7 @@ class OrderModel {
                         },
                     },
                 },
-                dekiveryStatus: {
+                deliveryStatus: {
                     type: String,
                     enum: ["preparing", "in_transit", "delivered"],
                     required: true,

@@ -23,6 +23,7 @@
     "@middlewares": "./src/middlewares"
   },
   "dependencies": {
+    "bakong-khqr": "^1.0.20",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -41,6 +42,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@types/bakong-khqr": "^1.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
