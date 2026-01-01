@@ -83,8 +83,62 @@ class AuthServiceImpl implements IAuthService {
     return { access_token: access, refresh_token: refresh };
   }
 
-  continueWithFacebook(credential: any): Promise<any> {
-    throw new Error("Method not implemented.");
+  async continueWithFacebook(credential: any): Promise<any> {
+    let user = await this.model.findOne({ email: credential.email });
+    if (!user) {
+      user = (await this.model.create({
+        fullName: credential.name,
+        email: credential.email,
+        gender: credential.gender ?? "not_specified",
+        role: credential.role ?? "user",
+        status: "active",
+        passwordHash: await bcrypt.genSalt(10),
+        oauthProviders: [
+          {
+            provider: "facebook",
+            providerId: credential.id,
+            linkedAt: new Date(),
+          },
+        ],
+      } as any)) as any;
+    } else {
+      const hasFacebookProvider = user.oauthProviders.find((provider) => {
+        return (
+          provider.provider === "facebook" &&
+          provider.providerId === credential.id
+        );
+      });
+
+      if (!hasFacebookProvider) {
+        user.oauthProviders.push({
+          provider: "facebook",
+          providerId: credential.id,
+          linkedAt: new Date(),
+        });
+        await user.save();
+      }
+    }
+
+    if (!user) {
+      throw new Error("User creation failed");
+    }
+
+    const access = generateAccessToken(user._id.toString());
+    const refresh = generateRefreshToken(user._id.toString());
+
+    await this.modelToken.findOneAndUpdate(
+      { userId: user._id as any },
+      {
+        tokenHash: await bcrypt.hash(crypto.randomUUID(), 10),
+        expiredAt: new Date(
+          (((await verifyRefreshToken(refresh)) as JwtPayload).exp as number) *
+            1000
+        ),
+      } as any,
+      { upsert: true, new: true }
+    );
+
+    return { access_token: access, refresh_token: refresh };
   }
 
   async login(credential: loginRequest): Promise<any> {

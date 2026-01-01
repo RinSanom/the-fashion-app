@@ -94,12 +94,18 @@ class AuthController {
   }
 
   async continueWithFacebook(req: Request, res: Response) {
+    const user = req.user;
+
+    const { access_token, refresh_token } =
+      await this.authService.continueWithFacebook(user);
+
     res.status(200).send({
-      message: "Facebook OAuth not yet implemented",
-      isSuccess: false,
+      message: "Facebook successful",
+      isSuccess: true,
       statusCode: 200,
       data: {
-        user: req.user,
+        access_token: access_token,
+        refresh_token: refresh_token,
       },
     });
   }
