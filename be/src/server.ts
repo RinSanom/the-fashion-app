@@ -10,6 +10,7 @@ import otpRouter from "routes/otp.router";
 import passport from "passport";
 import "@lib/auth_passport/facebook";
 import "@lib/auth_passport/gmail";
+import wishlistRouter from "routes/wishlist.router";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ databaseConfig.connectDB().then(() => {
   // mounting routes
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1", otpRouter);
+  app.use("/api/v1/wishlist", wishlistRouter);
 
   app.listen(Number(process.env.PORT) || 3000, () =>
     console.log(`Server is running on port ${Number(process.env.PORT) || 3000}`)

@@ -21,7 +21,7 @@ class WishlistModel {
           item: {
             productId: { type: mongoose.Schema.Types.ObjectId, required: true },
             variantId: { type: mongoose.Schema.Types.ObjectId, required: true },
-            addedAt: { type: Date, required: true },
+            addedAt: { type: Date, default: Date.now },
           },
         },
         { timestamps: true }
@@ -34,4 +34,4 @@ class WishlistModel {
   }
 }
 
-export default new WishlistModel();
+export default WishlistModel;

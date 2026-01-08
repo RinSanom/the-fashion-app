@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 
 const validationMiddleware = {
   // register validation
@@ -82,6 +82,28 @@ const validationMiddleware = {
       .withMessage("Verification code is required")
       .isString()
       .withMessage("Verification code must be a string"),
+  ],
+  addWishlists: [
+    body("productId")
+      .trim()
+      .notEmpty()
+      .withMessage("productId is required")
+      .isMongoId()
+      .withMessage("Invalid productId"),
+    body("variantId")
+      .trim()
+      .notEmpty()
+      .withMessage("variantId is required")
+      .isMongoId()
+      .withMessage("Invalid variantId"),
+  ],
+  removeWishlists: [
+    param("productId")
+      .trim()
+      .notEmpty()
+      .withMessage("productId is required")
+      .isMongoId()
+      .withMessage("Invalid productId"),
   ],
 };
 
