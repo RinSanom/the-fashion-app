@@ -11,11 +11,15 @@ import passport from "passport";
 import "@lib/auth_passport/facebook";
 import "@lib/auth_passport/gmail";
 import wishlistRouter from "routes/wishlist.router";
+import { WebSocketServer, WebSocket } from "ws";
+import http from "http";
+import { initWS } from "config/websocket.config";
 
 dotenv.config();
 
 databaseConfig.connectDB().then(() => {
   const app = express();
+  const server = initWS(http.createServer(app));
 
   // mounting express plugin
   app.use(cors());
@@ -40,7 +44,7 @@ databaseConfig.connectDB().then(() => {
   app.use("/api/v1", otpRouter);
   app.use("/api/v1/wishlist", wishlistRouter);
 
-  app.listen(Number(process.env.PORT) || 3000, () =>
+  server.listen(Number(process.env.PORT) || 3000, () =>
     console.log(`Server is running on port ${Number(process.env.PORT) || 3000}`)
   );
 
