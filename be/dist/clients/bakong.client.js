@@ -17,7 +17,7 @@ class BakongClient {
                 purposeOfTransaction: "Product Purchase",
                 billNumber: data.billNumber,
             };
-            const merchantInfo = new MerchantInfo("demo_merchant@aclb", "The Fashion App", "Phnom Penh", "123456", "Dev Bank", optionalData);
+            const merchantInfo = new MerchantInfo("rin_sanom@bkrt", "The Fashion App", "Phnom Penh", "123456", "Dev Bank", optionalData);
             const result = this.khqr.generateMerchant(merchantInfo);
             if (!result || !result.data) {
                 console.error("KHQR Generation Failed:", result);
@@ -67,7 +67,7 @@ class BakongClient {
             if (!decodeResult || decodeResult.status.code !== 0) {
                 throw new Error(((_a = decodeResult === null || decodeResult === void 0 ? void 0 : decodeResult.status) === null || _a === void 0 ? void 0 : _a.message) || "Failed to decode KHQR");
             }
-            console.log("✅ KHQR decoded successfully");
+            console.log("KHQR decoded successfully");
             return decodeResult.data;
         }
         catch (error) {

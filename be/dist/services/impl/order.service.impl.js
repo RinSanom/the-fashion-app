@@ -33,7 +33,7 @@ class OrderServiceImpl {
             const order = yield this.orderModel.create({
                 orderNumber: orderNumbes,
                 userId: new mongoose_1.default.Types.ObjectId(data.userId),
-                item: data.item.map((item) => ({
+                items: data.item.map((item) => ({
                     productId: new mongoose_1.default.Types.ObjectId(item.productId),
                     variantId: new mongoose_1.default.Types.ObjectId(item.variantId),
                     size: item.size,
@@ -63,6 +63,57 @@ class OrderServiceImpl {
                 },
             });
             return order;
+        });
+    }
+    getOrderById(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const order = yield this.orderModel.findById(orderId);
+            if (!order) {
+                throw new Error("Order not found.");
+            }
+            return order;
+        });
+    }
+    getAllOrders() {
+        return __awaiter(this, arguments, void 0, function* (page = 1, limit = 10) {
+            const skip = (page - 1) * limit;
+            try {
+                const [orders, total] = yield Promise.all([
+                    this.orderModel
+                        .find()
+                        .skip(skip)
+                        .limit(limit)
+                        .sort({ createdAt: -1 })
+                        .exec(),
+                    this.orderModel.countDocuments(),
+                ]);
+                return {
+                    data: orders,
+                    total,
+                    page,
+                    limit,
+                };
+            }
+            catch (error) {
+                throw new Error("Error fetching orders.");
+            }
+        });
+    }
+    getOrderByUser(userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!mongoose_1.default.Types.ObjectId.isValid(userId)) {
+                throw new Error("Invalid user ID");
+            }
+            try {
+                const orders = yield this.orderModel
+                    .find({ userId: userId })
+                    .sort({ createdAt: -1 })
+                    .exec();
+                return orders;
+            }
+            catch (error) {
+                throw new Error(`Error fetching orders for user: ${error}`);
+            }
         });
     }
 }

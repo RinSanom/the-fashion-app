@@ -26,7 +26,7 @@ class BakongClient {
       };
 
       const merchantInfo = new MerchantInfo(
-        "demo_merchant@aclb",
+        "rin_sanom@bkrt",
         "The Fashion App",
         "Phnom Penh",
         "123456",
@@ -93,7 +93,7 @@ class BakongClient {
         );
       }
 
-      console.log("✅ KHQR decoded successfully");
+      console.log("KHQR decoded successfully");
       return decodeResult.data;
     } catch (error: any) {
       console.error("Error decoding KHQR:", error);

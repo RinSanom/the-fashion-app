@@ -21,6 +21,49 @@ class OrderController {
                 res.status(500).json({ success: false, message: "Internal Server Error" });
             }
         });
+        this.getAllOrders = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const page = Number(req.query.page) || 1;
+                const limit = Number(req.query.page) || 10;
+                const orders = yield this.orderService.getAllOrders(page, limit);
+                res.status(200).json({
+                    success: true,
+                    message: "Orders fetched successfully",
+                    data: orders
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+        this.getOrdetById = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { id } = req.params;
+                const orderId = yield this.orderService.getOrderById(id);
+                res.status(200).json({
+                    success: true,
+                    message: "Order fetched Succssfully",
+                    data: orderId
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+        this.getOrderByUser = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { id } = req.params;
+                const orderOject = yield this.orderService.getOrderByUser(id);
+                res.status(200).json({
+                    success: true,
+                    message: "Succssfully",
+                    data: orderOject,
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
         this.orderService = new order_service_impl_1.OrderServiceImpl();
     }
 }
