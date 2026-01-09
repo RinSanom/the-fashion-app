@@ -4,14 +4,26 @@
   "description": "",
   "scripts": {
     "dev": "bun --watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
+    "vercel-build": "tsc && tsc-alias",
     "start": "bun run dist/server.js"
   },
   "keywords": [],
   "author": "Vanneth Yann && Rin Sanom",
   "license": "ISC",
   "type": "commonjs",
+  "_moduleAliases": {
+    "@utils": "./src/utils",
+    "@models": "./src/models",
+    "@controllers": "./src/controllers",
+    "@services": "./src/services",
+    "@ctypes": "./src/types",
+    "@dtos": "./src/dtos",
+    "@exceptions": "./src/exceptions",
+    "@middlewares": "./src/middlewares"
+  },
   "dependencies": {
+    "bakong-khqr": "^1.0.20",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -19,6 +31,7 @@
     "express-validator": "^7.3.1",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
+    "module-alias": "^2.2.3",
     "mongoose": "^9.0.1",
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
@@ -26,6 +39,7 @@
     "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
+    "@types/bakong-khqr": "^1.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
