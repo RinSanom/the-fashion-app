@@ -1,4 +1,3 @@
-import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import authRouter from "./routes/auth.router";
@@ -14,20 +13,16 @@ import wishlistRouter from "routes/wishlist.router";
 
 dotenv.config();
 
-databaseConfig.connectDB().then(() => {
-  const app = express();
-
-  // mounting express plugin
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-
-  // mounting passport
-  app.use(passport.initialize());
-
-  const redisClient = new redis({
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
+dbConfig
+  .connectDB()
+  .then(() => {
+    console.log("MongoDB connected successfully");
+    const port = Number(process.env.PORT) || 3000;
+    app.listen(port, () => console.log(`Server is running on port ${port}`));
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
   });
 
   // mounting secure route middleware

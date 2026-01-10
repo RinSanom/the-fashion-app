@@ -25,7 +25,7 @@ export interface IOrder extends Document {
       country: string;
       location: LocationMetaData;
     };
-    dekiveryStatus: "preparing" | "in_transit" | "delivered";
+    deliveryStatus: "preparing" | "in_transit" | "delivered";
     trackingNumber: string;
     courier: string;
   };
@@ -88,7 +88,7 @@ class OrderModel {
                 },
               },
             },
-            dekiveryStatus: {
+            deliveryStatus: {
               type: String,
               enum: ["preparing", "in_transit", "delivered"],
               required: true,
