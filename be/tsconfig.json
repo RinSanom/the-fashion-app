@@ -17,7 +17,8 @@
       "@dtos/*": ["dtos/*"],
       "@exceptions/*": ["exceptions/*"],
       "@middlewares/*": ["middlewares/*"],
-      "@lib/*": ["lib/*"]
+      "@lib/*": ["lib/*"],
+      "@mapper/*": ["mapper/*"]
     }
   },
   "include": ["src"]
