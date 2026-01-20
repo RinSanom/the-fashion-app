@@ -18,7 +18,8 @@ class CartController {
 
     getCart = async (req: Request , res: Response): Promise<void> => {
         try {
-            const cart = await this.cartService.getCartItemsByUserId(req.params.userId);
+            const id = req.params.userId as string;
+            const cart = await this.cartService.getCartItemsByUserId(id);
             res.status(200).json({success: true, data: cart, message: "Cart fetched successfully"});
         } catch (error: any) {
             res.status(500).json({success: false, message: "Internal Server Error"});

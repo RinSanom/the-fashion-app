@@ -22,7 +22,11 @@ class PaymentController {
   // Get payment by ID
   getPaymentById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const payment = await paymentService.getPaymentById(req.params.paymentId);
+    const id = req.params;
+    if (typeof id !== "string"){
+      throw new Error("Invalide Id Input.")
+    }
+      const payment = await paymentService.getPaymentById(id);
       if (!payment) {
         res.status(404).json({
           success: false,
@@ -45,8 +49,12 @@ class PaymentController {
   // Get payment by order ID
   getPaymentByOrderId = async (req: Request, res: Response): Promise<void> => {
     try {
+      const id = req.params;
+      if (typeof id !== "string"){
+        throw new Error("Invalide id input.")
+      }
       const payment = await paymentService.getPaymentByOrderId(
-        req.params.orderId
+        id
       );
       if (!payment) {
         res.status(404).json({
@@ -86,8 +94,12 @@ class PaymentController {
   // Update payment status
   updatePaymentStatus = async (req: Request, res: Response): Promise<void> => {
     try {
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
       const payment = await paymentService.updatePaymentStatus(
-        req.params.paymentId,
+        id,
         req.body
       );
       if (!payment) {
@@ -114,8 +126,12 @@ class PaymentController {
   completePayment = async (req: Request, res: Response): Promise<void> => {
     try {
       const { transactionRef } = req.body;
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
       const payment = await paymentService.completePayment(
-        req.params.paymentId,
+        id,
         transactionRef
       );
       if (!payment) {
@@ -142,8 +158,12 @@ class PaymentController {
   failPayment = async (req: Request, res: Response): Promise<void> => {
     try {
       const { reason } = req.body;
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
       const payment = await paymentService.failPayment(
-        req.params.paymentId,
+        id,
         reason
       );
       if (!payment) {
@@ -169,7 +189,11 @@ class PaymentController {
   // Expire payment
   expirePayment = async (req: Request, res: Response): Promise<void> => {
     try {
-      const payment = await paymentService.expirePayment(req.params.paymentId);
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
+      const payment = await paymentService.expirePayment(id);
       if (!payment) {
         res.status(404).json({
           success: false,

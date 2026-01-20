@@ -22,6 +22,7 @@ export const createApp = () => {
 
   app.use(passport.initialize());
 
+
   app.use(routeValidation);
 
   // Health check - responds immediately without waiting for DB

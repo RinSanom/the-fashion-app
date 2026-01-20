@@ -68,7 +68,11 @@ class ProductController {
 
   getProductById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const product = await this.productService.getProductById(req.params.id);
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
+      const product = await this.productService.getProductById(id);
       if (product) {
         res
           .status(200)
@@ -89,8 +93,12 @@ class ProductController {
 
   updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
+       const id = req.params;
+       if (typeof id !== "string") {
+         throw new Error("Invalide Id Input.");
+       }
       const updatedProduct = await this.productService.updateProduct(
-        req.params.id,
+        id,
         req.body
       );
       res
@@ -110,6 +118,9 @@ class ProductController {
   deleteProduct = async (req: Request, res: Response): Promise<void> => {
     try {
       const productId = req.params.id;
+      if (typeof productId !== "string"){
+        throw new Error ("Invalid id.")
+      } 
       await this.productService.deleteProduct(productId);
       res
         .status(200)

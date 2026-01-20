@@ -35,7 +35,10 @@ class OrderController {
 
     getOrdetById = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
       try {
-        const {id} = req.params;
+        const {id} = req.params
+        if (typeof id !== "string") {
+          throw new Error("Invalid order id");
+        }
         const orderId = await this.orderService.getOrderById(id);
         res.status(200).json({
             success: true,
@@ -50,6 +53,9 @@ class OrderController {
     getOrderByUser = async (req: Request , res: Response , next: NextFunction ):Promise<void> => {
          try {
            const { id } = req.params;
+           if (typeof id !== "string") {
+             throw new Error("Invalid order id");
+           }
            const orderOject = await this.orderService.getOrderByUser(id);
            res.status(200).json({
              success: true,

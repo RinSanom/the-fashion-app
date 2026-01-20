@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import  express  from "express";
 import cors from "cors";
 import authRouter from "./routes/auth.router";
 import databaseConfig from "config/database.config";
