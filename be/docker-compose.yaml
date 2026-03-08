@@ -1,22 +1,16 @@
+version: "3.9"
+
 services:
-  db:
-    image: mongo:8.2.2
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: superuser
-      MONGO_INITDB_ROOT_PASSWORD: superuser
-      MONGO_INITDB_DATABASE: theFashionAppDB
+  backend:
+    image: fashion-app
     ports:
-      - "27018:27017"
-    volumes:
-      - mongo-data:/data/db
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
   redis:
-    image: redis:7-alpine
-    container_name: redis
+    image: redis:7
     ports:
       - "6379:6379"
-    volumes:
-      - redis-data:/data
-
-volumes:
-  mongo-data:
-  redis-data:

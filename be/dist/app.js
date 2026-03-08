@@ -16,6 +16,8 @@ const resource_middleware_1 = __importDefault(require("./middlewares/resource.mi
 const error_middleware_1 = __importDefault(require("./middlewares/error.middleware"));
 const order_router_1 = __importDefault(require("./routes/order.router"));
 const payment_router_1 = __importDefault(require("./routes/payment.router"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_config_1 = require("./config/swagger.config");
 dotenv_1.default.config();
 const createApp = () => {
     const app = (0, express_1.default)();
@@ -23,6 +25,19 @@ const createApp = () => {
     app.use(express_1.default.json());
     app.use(express_1.default.urlencoded({ extended: true }));
     app.use(passport_1.default.initialize());
+    // Swagger UI (before routeValidation so it's not blocked)
+    app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_config_1.swaggerSpec));
+    app.get("/api-doc", (req, res) => {
+        res.redirect(302, "/api-docs");
+    });
+    app.get("/api-docs.json", (req, res) => {
+        res.setHeader("Content-Type", "application/json");
+        res.send(swagger_config_1.swaggerSpec);
+    });
+    app.get("/api-doc.json", (req, res) => {
+        res.setHeader("Content-Type", "application/json");
+        res.send(swagger_config_1.swaggerSpec);
+    });
     app.use(resource_middleware_1.default);
     // Health check - responds immediately without waiting for DB
     app.get("/", (req, res) => {

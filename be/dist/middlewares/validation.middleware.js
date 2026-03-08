@@ -78,6 +78,28 @@ const validationMiddleware = {
             .isString()
             .withMessage("Verification code must be a string"),
     ],
+    addWishlists: [
+        (0, express_validator_1.body)("productId")
+            .trim()
+            .notEmpty()
+            .withMessage("productId is required")
+            .isMongoId()
+            .withMessage("Invalid productId"),
+        (0, express_validator_1.body)("variantId")
+            .trim()
+            .notEmpty()
+            .withMessage("variantId is required")
+            .isMongoId()
+            .withMessage("Invalid variantId"),
+    ],
+    removeWishlists: [
+        (0, express_validator_1.param)("productId")
+            .trim()
+            .notEmpty()
+            .withMessage("productId is required")
+            .isMongoId()
+            .withMessage("Invalid productId"),
+    ],
 };
 const ValidationMiddleware = (req, res, next) => {
     const errors = (0, express_validator_1.validationResult)(req);

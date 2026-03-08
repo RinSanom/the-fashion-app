@@ -73,7 +73,11 @@ class ProductController {
         });
         this.getProductById = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const product = yield this.productService.getProductById(req.params.id);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const product = yield this.productService.getProductById(id);
                 if (product) {
                     res
                         .status(200)
@@ -95,7 +99,11 @@ class ProductController {
         });
         this.updateProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const updatedProduct = yield this.productService.updateProduct(req.params.id, req.body);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const updatedProduct = yield this.productService.updateProduct(id, req.body);
                 res
                     .status(200)
                     .json({
@@ -113,6 +121,9 @@ class ProductController {
         this.deleteProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const productId = req.params.id;
+                if (typeof productId !== "string") {
+                    throw new Error("Invalid id.");
+                }
                 yield this.productService.deleteProduct(productId);
                 res
                     .status(200)

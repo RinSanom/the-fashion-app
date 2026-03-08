@@ -24,7 +24,7 @@ class DBConfig {
       console.info("Database connected successfully.");
     } catch (err) {
       console.error("Failed to connect to MongoDB:", err);
-      throw err; // Don't exit, throw for serverless to handle
+      throw err; 
     }
   }
 }

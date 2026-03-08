@@ -68,9 +68,9 @@ class ProductController {
 
   getProductById = async (req: Request, res: Response): Promise<void> => {
     try {
-       const id = req.params;
+       const id = req.params.id;
        if (typeof id !== "string") {
-         throw new Error("Invalide Id Input.");
+         throw new Error("Invalid Id Input.");
        }
       const product = await this.productService.getProductById(id);
       if (product) {
@@ -93,9 +93,9 @@ class ProductController {
 
   updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-       const id = req.params;
+       const id = req.params.id;
        if (typeof id !== "string") {
-         throw new Error("Invalide Id Input.");
+         throw new Error("Invalid Id Input.");
        }
       const updatedProduct = await this.productService.updateProduct(
         id,

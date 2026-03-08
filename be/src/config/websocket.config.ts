@@ -2,8 +2,9 @@ import { Message } from "@ctypes/location";
 import { WebSocket, WebSocketServer } from "ws";
 import http from "http";
 
-export const initWS = (server: http.Server): any => {
-  const wss = new WebSocketServer({ server: server });
+export const initWS = (server: http.Server): http.Server => {
+  const wss = new WebSocketServer({ server });
+
   const orderClients = new Map<string, Set<WebSocket>>();
 
   wss.on("connection", (ws: WebSocket) => {
@@ -33,4 +34,6 @@ export const initWS = (server: http.Server): any => {
       orderClients.forEach((clients) => clients.delete(ws));
     });
   });
+
+  return server;
 };

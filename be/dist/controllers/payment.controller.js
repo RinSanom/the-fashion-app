@@ -35,7 +35,11 @@ class PaymentController {
         // Get payment by ID
         this.getPaymentById = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const payment = yield payment_service_impl_1.default.getPaymentById(req.params.paymentId);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const payment = yield payment_service_impl_1.default.getPaymentById(id);
                 if (!payment) {
                     res.status(404).json({
                         success: false,
@@ -58,7 +62,11 @@ class PaymentController {
         // Get payment by order ID
         this.getPaymentByOrderId = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const payment = yield payment_service_impl_1.default.getPaymentByOrderId(req.params.orderId);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide id input.");
+                }
+                const payment = yield payment_service_impl_1.default.getPaymentByOrderId(id);
                 if (!payment) {
                     res.status(404).json({
                         success: false,
@@ -97,7 +105,11 @@ class PaymentController {
         // Update payment status
         this.updatePaymentStatus = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const payment = yield payment_service_impl_1.default.updatePaymentStatus(req.params.paymentId, req.body);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const payment = yield payment_service_impl_1.default.updatePaymentStatus(id, req.body);
                 if (!payment) {
                     res.status(404).json({
                         success: false,
@@ -122,7 +134,11 @@ class PaymentController {
         this.completePayment = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { transactionRef } = req.body;
-                const payment = yield payment_service_impl_1.default.completePayment(req.params.paymentId, transactionRef);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const payment = yield payment_service_impl_1.default.completePayment(id, transactionRef);
                 if (!payment) {
                     res.status(404).json({
                         success: false,
@@ -147,7 +163,11 @@ class PaymentController {
         this.failPayment = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { reason } = req.body;
-                const payment = yield payment_service_impl_1.default.failPayment(req.params.paymentId, reason);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const payment = yield payment_service_impl_1.default.failPayment(id, reason);
                 if (!payment) {
                     res.status(404).json({
                         success: false,
@@ -171,7 +191,11 @@ class PaymentController {
         // Expire payment
         this.expirePayment = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const payment = yield payment_service_impl_1.default.expirePayment(req.params.paymentId);
+                const id = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalide Id Input.");
+                }
+                const payment = yield payment_service_impl_1.default.expirePayment(id);
                 if (!payment) {
                     res.status(404).json({
                         success: false,

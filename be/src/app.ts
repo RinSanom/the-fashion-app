@@ -10,6 +10,8 @@ import routeValidation from "./middlewares/resource.middleware";
 import errorHandler from "./middlewares/error.middleware";
 import orderRouter from "routes/order.router";
 import paymentRouter from "routes/payment.router";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.config";
 
 dotenv.config();
 
@@ -22,6 +24,19 @@ export const createApp = () => {
 
   app.use(passport.initialize());
 
+  // Swagger UI (before routeValidation so it's not blocked)
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get("/api-doc", (req, res) => {
+    res.redirect(302, "/api-docs");
+  });
+  app.get("/api-docs.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
+  app.get("/api-doc.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
 
   app.use(routeValidation);
 

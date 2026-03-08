@@ -25,6 +25,12 @@ const routeValidation = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
         console.log("Request path:", req.path, "Method:", req.method);
         if ((0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/auth/*") ||
             (0, permitRoutes_1.permitRoutes)(req, "GET", "/") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-doc") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-doc/*") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-docs") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-docs/*") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-doc.json") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api-docs.json") ||
             (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/send-verification-code") ||
             (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/verify-code") ||
             (0, permitRoutes_1.permitRoutes)(req, "GET", "/api/v1/products") ||
@@ -70,6 +76,7 @@ const routeValidation = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
         const user = yield user_1.default.getModel().findById(decoded.id).lean();
         if (!user)
             throw new forbidden_exception_1.default();
+        req.user = user;
         next();
     }
     catch (err) {

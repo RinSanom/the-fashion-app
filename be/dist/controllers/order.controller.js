@@ -39,6 +39,9 @@ class OrderController {
         this.getOrdetById = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { id } = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalid order id");
+                }
                 const orderId = yield this.orderService.getOrderById(id);
                 res.status(200).json({
                     success: true,
@@ -53,6 +56,9 @@ class OrderController {
         this.getOrderByUser = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { id } = req.params;
+                if (typeof id !== "string") {
+                    throw new Error("Invalid order id");
+                }
                 const orderOject = yield this.orderService.getOrderByUser(id);
                 res.status(200).json({
                     success: true,

@@ -23,6 +23,102 @@ class AuthServiceImpl {
         this.model = user_1.default.getModel();
         this.modelToken = token_1.default.getModel();
     }
+    continueWithGoogle(credential) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            let user = yield this.model.findOne({ email: credential._json.email });
+            if (!user) {
+                user = (yield this.model.create({
+                    fullName: credential._json.name,
+                    email: credential._json.email,
+                    gender: (_a = credential.gender) !== null && _a !== void 0 ? _a : "not_specified",
+                    role: (_b = credential.role) !== null && _b !== void 0 ? _b : "user",
+                    status: "active",
+                    passwordHash: yield bcryptjs_1.default.genSalt(10),
+                    oauthProviders: [
+                        {
+                            provider: "google",
+                            providerId: credential.sub,
+                            linkedAt: new Date(),
+                        },
+                    ],
+                }));
+            }
+            else {
+                const hasGoogleProvider = user.oauthProviders.find((provider) => {
+                    return (provider.provider === "google" &&
+                        provider.providerId === credential.sub);
+                });
+                if (!hasGoogleProvider) {
+                    user.oauthProviders.push({
+                        provider: "google",
+                        providerId: credential.sub,
+                        linkedAt: new Date(),
+                    });
+                    yield user.save();
+                }
+            }
+            if (!user) {
+                throw new Error("User creation failed");
+            }
+            const access = (0, jwtUtils_1.generateAccessToken)(user._id.toString());
+            const refresh = (0, jwtUtils_1.generateRefreshToken)(user._id.toString());
+            yield this.modelToken.findOneAndUpdate({ userId: user._id }, {
+                tokenHash: yield bcryptjs_1.default.hash(crypto.randomUUID(), 10),
+                expiredAt: new Date((yield (0, jwtUtils_1.verifyRefreshToken)(refresh)).exp *
+                    1000),
+            }, { upsert: true, new: true });
+            return { access_token: access, refresh_token: refresh };
+        });
+    }
+    continueWithFacebook(credential) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            let user = yield this.model.findOne({ email: credential.email });
+            if (!user) {
+                user = (yield this.model.create({
+                    fullName: credential.name,
+                    email: credential.email,
+                    gender: (_a = credential.gender) !== null && _a !== void 0 ? _a : "not_specified",
+                    role: (_b = credential.role) !== null && _b !== void 0 ? _b : "user",
+                    status: "active",
+                    passwordHash: yield bcryptjs_1.default.genSalt(10),
+                    oauthProviders: [
+                        {
+                            provider: "facebook",
+                            providerId: credential.id,
+                            linkedAt: new Date(),
+                        },
+                    ],
+                }));
+            }
+            else {
+                const hasFacebookProvider = user.oauthProviders.find((provider) => {
+                    return (provider.provider === "facebook" &&
+                        provider.providerId === credential.id);
+                });
+                if (!hasFacebookProvider) {
+                    user.oauthProviders.push({
+                        provider: "facebook",
+                        providerId: credential.id,
+                        linkedAt: new Date(),
+                    });
+                    yield user.save();
+                }
+            }
+            if (!user) {
+                throw new Error("User creation failed");
+            }
+            const access = (0, jwtUtils_1.generateAccessToken)(user._id.toString());
+            const refresh = (0, jwtUtils_1.generateRefreshToken)(user._id.toString());
+            yield this.modelToken.findOneAndUpdate({ userId: user._id }, {
+                tokenHash: yield bcryptjs_1.default.hash(crypto.randomUUID(), 10),
+                expiredAt: new Date((yield (0, jwtUtils_1.verifyRefreshToken)(refresh)).exp *
+                    1000),
+            }, { upsert: true, new: true });
+            return { access_token: access, refresh_token: refresh };
+        });
+    }
     login(credential) {
         return __awaiter(this, void 0, void 0, function* () {
             const user = yield this.model.findOne({
