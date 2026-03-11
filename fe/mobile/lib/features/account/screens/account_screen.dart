@@ -4,14 +4,31 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/providers/auth_provider.dart';
+import 'package:mobile/providers/profile_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
 
-class AccountScreen extends ConsumerWidget {
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(profileProvider.notifier).loadProfile(forceRefresh: true),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final profileState = ref.watch(profileProvider);
+    final profile = profileState.profile;
+    final subtitle = profile?.email ?? authState.verificationEmail ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.primary0,
@@ -26,12 +43,13 @@ class AccountScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Account',
-                        style:
-                            AppTextStyles.h2SemiBold.copyWith(fontSize: 24)),
+                    Text(
+                      'Account',
+                      style: AppTextStyles.h2SemiBold.copyWith(fontSize: 24),
+                    ),
                     IconButton(
-                      onPressed: () => Navigator.pushNamed(
-                          context, AppRoutes.notifications),
+                      onPressed: () =>
+                          Navigator.pushNamed(context, AppRoutes.notifications),
                       icon: const Icon(Icons.notifications_none, size: 24),
                     ),
                   ],
@@ -47,8 +65,13 @@ class AccountScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 24,
                       backgroundColor: AppColors.primary100,
-                      child: const Icon(Icons.person,
-                          color: AppColors.primary500, size: 28),
+                      child: Text(
+                        profile?.initials ?? 'U',
+                        style: AppTextStyles.b1Medium.copyWith(
+                          color: AppColors.primary800,
+                          fontSize: 18,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -56,15 +79,21 @@ class AccountScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'User',
+                            profile?.displayName ??
+                                (profileState.isLoading
+                                    ? 'Loading profile...'
+                                    : 'User'),
                             style: AppTextStyles.b1Medium,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            authState.userId ?? '',
-                            style: AppTextStyles.b2Regular
-                                .copyWith(color: AppColors.primary500),
+                            subtitle.isNotEmpty
+                                ? subtitle
+                                : (authState.userId ?? ''),
+                            style: AppTextStyles.b2Regular.copyWith(
+                              color: AppColors.primary500,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -74,6 +103,28 @@ class AccountScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (profileState.error != null && profile == null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          profileState.error!,
+                          style: AppTextStyles.b2Regular.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(profileProvider.notifier)
+                            .loadProfile(forceRefresh: true),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
 
               const SizedBox(height: 24),
 
@@ -81,8 +132,12 @@ class AccountScreen extends ConsumerWidget {
               _SectionTile(
                 icon: Icons.shopping_bag_outlined,
                 title: 'My Orders',
-                onTap: () =>
-                    Navigator.pushNamed(context, AppRoutes.orders),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.orders),
+              ),
+              _SectionTile(
+                icon: Icons.favorite_border,
+                title: 'Saved Items',
+                onTap: () => Navigator.pushNamed(context, AppRoutes.savedItems),
               ),
 
               const Divider(height: 1, color: AppColors.primary100),
@@ -93,25 +148,26 @@ class AccountScreen extends ConsumerWidget {
               _SectionTile(
                 icon: Icons.person_outline,
                 title: 'My Details',
-                onTap: () =>
-                    Navigator.pushNamed(context, AppRoutes.myDetails),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.myDetails),
               ),
               _SectionTile(
                 icon: Icons.location_on_outlined,
                 title: 'Address Book',
-                onTap: () =>
-                    Navigator.pushNamed(context, AppRoutes.address),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.address),
               ),
               _SectionTile(
                 icon: Icons.payment_outlined,
                 title: 'Payment Methods',
-                onTap: () {},
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.paymentMethods),
               ),
               _SectionTile(
                 icon: Icons.notifications_none,
                 title: 'Notifications',
                 onTap: () => Navigator.pushNamed(
-                    context, AppRoutes.notificationsSettings),
+                  context,
+                  AppRoutes.notificationsSettings,
+                ),
               ),
 
               const Divider(height: 1, color: AppColors.primary100),
@@ -122,14 +178,12 @@ class AccountScreen extends ConsumerWidget {
               _SectionTile(
                 icon: Icons.help_outline,
                 title: 'FAQs',
-                onTap: () =>
-                    Navigator.pushNamed(context, AppRoutes.faqs),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.faqs),
               ),
               _SectionTile(
                 icon: Icons.support_agent,
                 title: 'Help Center',
-                onTap: () =>
-                    Navigator.pushNamed(context, AppRoutes.helpCenter),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.helpCenter),
               ),
 
               const Divider(height: 1, color: AppColors.primary100),
@@ -169,16 +223,24 @@ class AccountScreen extends ConsumerWidget {
                   color: Colors.orange.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.warning_amber_rounded,
-                    color: Colors.orange, size: 48),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
-              Text('Logout?',
-                  style: AppTextStyles.h2SemiBold.copyWith(fontSize: 22)),
+              Text(
+                'Logout?',
+                style: AppTextStyles.h2SemiBold.copyWith(fontSize: 22),
+              ),
               const SizedBox(height: 8),
-              Text('Are you sure you want to logout?',
-                  style: AppTextStyles.b2Regular
-                      .copyWith(color: AppColors.primary500)),
+              Text(
+                'Are you sure you want to logout?',
+                style: AppTextStyles.b2Regular.copyWith(
+                  color: AppColors.primary500,
+                ),
+              ),
               const SizedBox(height: 24),
               AppButton(
                 label: 'Yes, Logout',
@@ -218,9 +280,13 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-      child: Text(title,
-          style: AppTextStyles.b2Regular.copyWith(
-              color: AppColors.primary500, fontWeight: FontWeight.w600)),
+      child: Text(
+        title,
+        style: AppTextStyles.b2Regular.copyWith(
+          color: AppColors.primary500,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -251,13 +317,19 @@ class _SectionTile extends StatelessWidget {
             Icon(icon, size: 22, color: titleColor ?? AppColors.primary900),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(title,
-                  style: AppTextStyles.b1Regular.copyWith(
-                      color: titleColor ?? AppColors.primary900)),
+              child: Text(
+                title,
+                style: AppTextStyles.b1Regular.copyWith(
+                  color: titleColor ?? AppColors.primary900,
+                ),
+              ),
             ),
             if (showArrow)
-              const Icon(Icons.chevron_right,
-                  size: 20, color: AppColors.primary400),
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.primary400,
+              ),
           ],
         ),
       ),

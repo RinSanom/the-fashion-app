@@ -7,6 +7,7 @@ import 'package:mobile/models/product.dart';
 import 'package:mobile/providers/cart_provider.dart';
 import 'package:mobile/providers/product_provider.dart';
 import 'package:mobile/providers/wishlist_provider.dart';
+import 'package:mobile/widgets/app_button.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
@@ -23,6 +24,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   String? _selectedColor;
   int _quantity = 1;
   int _currentImageIndex = 0;
+  bool _isDescriptionExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           if (product == null) {
             return const Center(child: Text('Product not found'));
           }
+
           final isSaved = wishlistState.containsProduct(product.id);
           return _buildContent(product, isSaved);
         },
@@ -56,22 +59,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image carousel
                 _buildImageCarousel(product, isSaved),
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Product name
                       Text(
                         product.name,
                         style: AppTextStyles.h2SemiBold.copyWith(fontSize: 20),
                       ),
                       const SizedBox(height: 8),
-
-                      // Rating
                       Row(
                         children: [
                           ...List.generate(
@@ -92,33 +90,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      // Price
                       Text(
                         '\$ ${price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 22,
-                          color: AppColors.primary900,
-                        ),
+                        style: AppTextStyles.h2SemiBold.copyWith(fontSize: 24),
                       ),
                       const SizedBox(height: 20),
-
-                      // Size selector
                       if (product.availableSizes.isNotEmpty) ...[
                         Text('Size', style: AppTextStyles.b1Medium),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Wrap(
-                          spacing: 8,
+                          spacing: 10,
+                          runSpacing: 10,
                           children: product.availableSizes.map((size) {
-                            final isSelected = _selectedSize == size;
+                            final defaultSize = product.availableSizes.first;
+                            final isSelected =
+                                (_selectedSize ?? defaultSize) == size;
+
                             return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedSize = size),
+                              onTap: () => setState(() => _selectedSize = size),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? AppColors.primary900
@@ -132,73 +126,92 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 ),
                                 child: Text(
                                   size,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
+                                  style: AppTextStyles.b2Regular.copyWith(
                                     color: isSelected
                                         ? AppColors.primary0
                                         : AppColors.primary900,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                       ],
-
-                      // Color selector
                       if (product.availableColors.isNotEmpty) ...[
                         Text('Color', style: AppTextStyles.b1Medium),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Wrap(
-                          spacing: 8,
-                          children: product.availableColors.map((color) {
-                            final isSelected = _selectedColor == color;
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: product.availableColors.map((colorName) {
+                            final defaultColor = product.availableColors.first;
+                            final isSelected =
+                                (_selectedColor ?? defaultColor) == colorName;
+
                             return GestureDetector(
                               onTap: () =>
-                                  setState(() => _selectedColor = color),
+                                  setState(() => _selectedColor = colorName),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary900
-                                      : AppColors.primary0,
-                                  borderRadius: BorderRadius.circular(10),
+                                  shape: BoxShape.circle,
                                   border: Border.all(
                                     color: isSelected
                                         ? AppColors.primary900
                                         : AppColors.primary100,
+                                    width: isSelected ? 2 : 1,
                                   ),
                                 ),
-                                child: Text(
-                                  color,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                    color: isSelected
-                                        ? AppColors.primary0
-                                        : AppColors.primary900,
+                                child: Center(
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: _resolveColor(colorName),
+                                    ),
                                   ),
                                 ),
                               ),
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                       ],
-
-                      // Description
                       Text('Description', style: AppTextStyles.b1Medium),
                       const SizedBox(height: 8),
                       Text(
                         product.description,
                         style: AppTextStyles.b2Regular.copyWith(height: 1.6),
+                        maxLines: _isDescriptionExpanded ? null : 3,
+                        overflow: _isDescriptionExpanded
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 2),
+                      TextButton(
+                        onPressed: () => setState(
+                          () =>
+                              _isDescriptionExpanded = !_isDescriptionExpanded,
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          _isDescriptionExpanded ? 'Show less' : 'Read more',
+                          style: AppTextStyles.b2Regular.copyWith(
+                            color: AppColors.primary900,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildReviewsSection(product),
                     ],
                   ),
                 ),
@@ -206,8 +219,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
           ),
         ),
-
-        // Bottom bar
         _buildBottomBar(product, price),
       ],
     );
@@ -215,6 +226,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Widget _buildImageCarousel(Product product, bool isSaved) {
     final images = product.images;
+
     return SizedBox(
       height: 390,
       child: Stack(
@@ -222,8 +234,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           if (images.isNotEmpty)
             PageView.builder(
               itemCount: images.length,
-              onPageChanged: (i) =>
-                  setState(() => _currentImageIndex = i),
+              onPageChanged: (i) => setState(() => _currentImageIndex = i),
               itemBuilder: (_, i) => Image.network(
                 images[i],
                 fit: BoxFit.cover,
@@ -231,8 +242,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 errorBuilder: (_, __, ___) => Container(
                   color: AppColors.primary100.withValues(alpha: 0.3),
                   child: const Center(
-                    child: Icon(Icons.image_outlined,
-                        size: 60, color: AppColors.primary200),
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 60,
+                      color: AppColors.primary200,
+                    ),
                   ),
                 ),
               ),
@@ -241,12 +255,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             Container(
               color: AppColors.primary100.withValues(alpha: 0.3),
               child: const Center(
-                child: Icon(Icons.image_outlined,
-                    size: 60, color: AppColors.primary200),
+                child: Icon(
+                  Icons.image_outlined,
+                  size: 60,
+                  color: AppColors.primary200,
+                ),
               ),
             ),
-
-          // Back arrow + bell
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
             left: 24,
@@ -254,61 +269,28 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
+                _CircleIconButton(
+                  icon: Icons.arrow_back,
                   onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary0.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_back, size: 22),
-                  ),
                 ),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(
-                      context, AppRoutes.notifications),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary0.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                        const Icon(Icons.notifications_none, size: 22),
-                  ),
+                _CircleIconButton(
+                  icon: Icons.notifications_none,
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.notifications),
                 ),
               ],
             ),
           ),
-
-          // Heart
           Positioned(
             top: MediaQuery.of(context).padding.top + 60,
             right: 24,
-            child: GestureDetector(
-              onTap: () => ref
-                  .read(wishlistProvider.notifier)
-                  .toggleWishlist(product),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary0.withValues(alpha: 0.8),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isSaved ? Icons.favorite : Icons.favorite_outline,
-                  size: 22,
-                  color: isSaved ? Colors.red : AppColors.primary900,
-                ),
-              ),
+            child: _CircleIconButton(
+              icon: isSaved ? Icons.favorite : Icons.favorite_outline,
+              iconColor: isSaved ? Colors.red : AppColors.primary900,
+              onTap: () =>
+                  ref.read(wishlistProvider.notifier).toggleWishlist(product),
             ),
           ),
-
-          // Dots indicator
           if (images.length > 1)
             Positioned(
               bottom: 16,
@@ -337,8 +319,49 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  Widget _buildReviewsSection(Product product) {
+    final hasReviews = product.reviewCount > 0 || product.rating > 0;
+    if (!hasReviews) {
+      return const SizedBox.shrink();
+    }
+
+    final sampleReviews = [
+      _ReviewData(
+        name: 'Ava Lee',
+        rating: product.rating > 0 ? product.rating : 4.5,
+        comment: 'Loved the quality and fit. It looks exactly like the photos.',
+      ),
+      _ReviewData(
+        name: 'Mia Chen',
+        rating: product.rating > 0 ? product.rating - 0.2 : 4.3,
+        comment: 'Fast delivery and nice material. I would buy another color.',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Reviews', style: AppTextStyles.b1Medium),
+            Text(
+              '${product.rating.toStringAsFixed(1)} / 5',
+              style: AppTextStyles.b2Regular.copyWith(
+                color: AppColors.primary500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...sampleReviews.map((review) => _ReviewCard(review: review)),
+      ],
+    );
+  }
+
   Widget _buildBottomBar(Product product, double price) {
     final cartState = ref.watch(cartProvider);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       decoration: BoxDecoration(
@@ -355,7 +378,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         top: false,
         child: Row(
           children: [
-            // Quantity control
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
@@ -368,50 +390,34 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ? () => setState(() => _quantity--)
                         : null,
                     icon: const Icon(Icons.remove, size: 18),
-                    constraints:
-                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
-                  Text('$_quantity',
-                      style: AppTextStyles.b1Medium.copyWith(fontSize: 16)),
+                  Text(
+                    '$_quantity',
+                    style: AppTextStyles.b1Medium.copyWith(fontSize: 16),
+                  ),
                   IconButton(
                     onPressed: () => setState(() => _quantity++),
                     icon: const Icon(Icons.add, size: 18),
-                    constraints:
-                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 16),
-            // Add to cart button
+            const SizedBox(width: 14),
             Expanded(
-              child: SizedBox(
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: cartState.isLoading
-                      ? null
-                      : () => _addToCart(product, price),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary900,
-                    foregroundColor: AppColors.primary0,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: cartState.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.primary0),
-                        )
-                      : Text(
-                          'Add to Cart',
-                          style: AppTextStyles.b1Medium.copyWith(
-                              color: AppColors.primary0),
-                        ),
-                ),
+              child: AppButton(
+                label: 'Add to Cart',
+                isLoading: cartState.isLoading,
+                onPressed: cartState.isLoading
+                    ? null
+                    : () => _addToCart(product, price),
               ),
             ),
           ],
@@ -421,20 +427,56 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   ProductVariant? _getSelectedVariant(Product product) {
-    if (product.variants.isEmpty) return null;
+    if (product.variants.isEmpty) {
+      return null;
+    }
+
+    final resolvedSize =
+        _selectedSize ??
+        (product.availableSizes.isNotEmpty
+            ? product.availableSizes.first
+            : null);
+    final resolvedColor =
+        _selectedColor ??
+        (product.availableColors.isNotEmpty
+            ? product.availableColors.first
+            : null);
+
     return product.variants.firstWhere(
       (v) =>
-          (_selectedSize == null || v.size == _selectedSize) &&
-          (_selectedColor == null || v.color == _selectedColor),
+          (resolvedSize == null || v.size == resolvedSize) &&
+          (resolvedColor == null || v.color == resolvedColor),
       orElse: () => product.variants.first,
     );
   }
 
+  Color _resolveColor(String value) {
+    final normalized = value.toLowerCase().trim();
+
+    if (normalized.contains('black')) return Colors.black;
+    if (normalized.contains('white')) return Colors.white;
+    if (normalized.contains('red')) return Colors.red;
+    if (normalized.contains('blue')) return Colors.blue;
+    if (normalized.contains('green')) return Colors.green;
+    if (normalized.contains('yellow')) return Colors.yellow.shade700;
+    if (normalized.contains('orange')) return Colors.orange;
+    if (normalized.contains('brown')) return const Color(0xFF8D6E63);
+    if (normalized.contains('gray') || normalized.contains('grey')) {
+      return Colors.grey;
+    }
+
+    return AppColors.primary500;
+  }
+
   Future<void> _addToCart(Product product, double price) async {
     final variant = _getSelectedVariant(product);
-    if (variant == null) return;
+    if (variant == null) {
+      return;
+    }
 
-    final success = await ref.read(cartProvider.notifier).addToCart(
+    final success = await ref
+        .read(cartProvider.notifier)
+        .addToCart(
           productId: product.id,
           variantId: variant.variantId,
           size: variant.size,
@@ -443,11 +485,128 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           quantity: _quantity,
         );
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(success ? 'Added to cart!' : 'Failed to add to cart'),
         backgroundColor: success ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
+    required this.icon,
+    required this.onTap,
+    this.iconColor = AppColors.primary900,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.primary0.withValues(alpha: 0.84),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 22, color: iconColor),
+      ),
+    );
+  }
+}
+
+class _ReviewData {
+  const _ReviewData({
+    required this.name,
+    required this.rating,
+    required this.comment,
+  });
+
+  final String name;
+  final double rating;
+  final String comment;
+}
+
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review});
+
+  final _ReviewData review;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary100),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primary100,
+            child: Text(
+              review.name.isNotEmpty ? review.name[0].toUpperCase() : '?',
+              style: AppTextStyles.b2Regular.copyWith(
+                color: AppColors.primary900,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        review.name,
+                        style: AppTextStyles.b2Regular.copyWith(
+                          color: AppColors.primary900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(
+                        5,
+                        (index) => Icon(
+                          index < review.rating.round()
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: Colors.amber,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  review.comment,
+                  style: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

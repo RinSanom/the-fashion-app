@@ -27,37 +27,26 @@ class AppBottomNav extends StatelessWidget {
             _NavItem(
               icon: Icons.home_outlined,
               activeIcon: Icons.home,
-              label: 'Home',
               isActive: currentIndex == 0,
               onTap: () => onTap(0),
             ),
             _NavItem(
-              icon: Icons.search,
+              icon: Icons.search_outlined,
               activeIcon: Icons.search,
-              label: 'Search',
               isActive: currentIndex == 1,
               onTap: () => onTap(1),
             ),
             _NavItem(
-              icon: Icons.favorite_outline,
-              activeIcon: Icons.favorite,
-              label: 'Saved',
+              icon: Icons.shopping_cart_outlined,
+              activeIcon: Icons.shopping_cart,
               isActive: currentIndex == 2,
               onTap: () => onTap(2),
             ),
             _NavItem(
-              icon: Icons.shopping_cart_outlined,
-              activeIcon: Icons.shopping_cart,
-              label: 'Cart',
-              isActive: currentIndex == 3,
-              onTap: () => onTap(3),
-            ),
-            _NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
-              label: 'Account',
-              isActive: currentIndex == 4,
-              onTap: () => onTap(4),
+              isActive: currentIndex == 3,
+              onTap: () => onTap(3),
             ),
           ],
         ),
@@ -70,42 +59,24 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
     required this.activeIcon,
-    required this.label,
     required this.isActive,
     required this.onTap,
   });
 
   final IconData icon;
   final IconData activeIcon;
-  final String label;
   final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary900 : AppColors.primary400;
+    final color = isActive ? AppColors.primary900 : AppColors.primary500;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 60,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(isActive ? activeIcon : icon, size: 24, color: color),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-                height: 1.4,
-                color: color,
-              ),
-            ),
-          ],
-        ),
+        width: 64,
+        child: Icon(isActive ? activeIcon : icon, size: 26, color: color),
       ),
     );
   }

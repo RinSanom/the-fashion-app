@@ -5,6 +5,7 @@ import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/product.dart';
 import 'package:mobile/providers/product_provider.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -36,33 +37,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) {
+    final normalized = query.trim();
+    if (normalized.isEmpty) {
       setState(() {
         _results = [];
         _hasSearched = false;
+        _isSearching = false;
       });
       return;
     }
 
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+    });
 
     // Search from already loaded products (client-side filter)
     final products = ref.read(productsProvider).products;
     final filtered = products
-        .where((p) =>
-            p.name.toLowerCase().contains(query.toLowerCase()) ||
-            p.category.toLowerCase().contains(query.toLowerCase()) ||
-            p.brand.toLowerCase().contains(query.toLowerCase()))
+        .where(
+          (p) =>
+              p.name.toLowerCase().contains(normalized.toLowerCase()) ||
+              p.category.toLowerCase().contains(normalized.toLowerCase()) ||
+              p.brand.toLowerCase().contains(normalized.toLowerCase()),
+        )
         .toList();
 
-    if (!_recentSearches.contains(query.trim())) {
-      _recentSearches.insert(0, query.trim());
+    if (!_recentSearches.contains(normalized)) {
+      _recentSearches.insert(0, normalized);
       if (_recentSearches.length > 10) _recentSearches.removeLast();
     }
 
     setState(() {
       _results = filtered;
-      _hasSearched = true;
       _isSearching = false;
     });
   }
@@ -74,34 +81,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child:
-                        const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Search',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pushNamed(
-                        context, AppRoutes.notifications),
-                    icon: const Icon(Icons.notifications_none, size: 24),
-                  ),
-                ],
+            AppScreenHeader(
+              title: 'Search',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
+              ),
+              trailing: IconButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.notifications),
+                icon: const Icon(Icons.notifications_none, size: 24),
               ),
             ),
 
@@ -113,12 +102,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 focusNode: _focusNode,
                 onSubmitted: _performSearch,
                 onChanged: (value) {
-                  if (value.isEmpty) {
-                    setState(() {
-                      _hasSearched = false;
-                      _results = [];
-                    });
-                  }
+                  _performSearch(value);
                 },
                 style: AppTextStyles.b1Regular,
                 decoration: InputDecoration(
@@ -126,19 +110,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   hintStyle: AppTextStyles.b1Regular.copyWith(
                     color: AppColors.primary400,
                   ),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.primary400),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primary400,
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: AppColors.primary100),
+                    borderSide: const BorderSide(color: AppColors.primary100),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(
-                        color: AppColors.primary900, width: 1.4),
+                      color: AppColors.primary900,
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),
@@ -181,8 +170,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Recent Searches',
-                  style: AppTextStyles.b1Medium.copyWith(fontSize: 16)),
+              Text(
+                'Recent Searches',
+                style: AppTextStyles.b1Medium.copyWith(fontSize: 16),
+              ),
               GestureDetector(
                 onTap: () => setState(() => _recentSearches.clear()),
                 child: Text(
@@ -218,10 +209,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => setState(
-                            () => _recentSearches.removeAt(index)),
-                        child: const Icon(Icons.cancel_outlined,
-                            size: 24, color: AppColors.primary400),
+                        onTap: () =>
+                            setState(() => _recentSearches.removeAt(index)),
+                        child: const Icon(
+                          Icons.cancel_outlined,
+                          size: 24,
+                          color: AppColors.primary400,
+                        ),
                       ),
                     ],
                   ),
@@ -238,14 +232,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       itemCount: _results.length,
-      separatorBuilder: (_, __) => const Divider(
-        height: 1,
-        color: AppColors.primary100,
-      ),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, color: AppColors.primary100),
       itemBuilder: (context, index) {
         final product = _results[index];
-        final image =
-            product.images.isNotEmpty ? product.images.first : null;
+        final image = product.images.isNotEmpty ? product.images.first : null;
         return GestureDetector(
           onTap: () => Navigator.pushNamed(
             context,
@@ -259,7 +250,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 // Image
                 Container(
                   width: 73,
-                  height: 93,
+                  height: 87,
                   decoration: BoxDecoration(
                     color: AppColors.primary100.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
@@ -267,13 +258,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.image_outlined)),
+                          child: Image.network(
+                            image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.image_outlined),
+                          ),
                         )
-                      : const Icon(Icons.image_outlined,
-                          color: AppColors.primary200),
+                      : const Icon(
+                          Icons.image_outlined,
+                          color: AppColors.primary200,
+                        ),
                 ),
                 const SizedBox(width: 14),
                 // Info
@@ -300,8 +295,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios,
-                    size: 16, color: AppColors.primary400),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.primary400,
+                ),
               ],
             ),
           ),

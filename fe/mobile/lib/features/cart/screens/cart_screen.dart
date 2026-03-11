@@ -6,6 +6,7 @@ import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/cart.dart';
 import 'package:mobile/providers/cart_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -31,37 +32,24 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
+            AppScreenHeader(
+              title: 'My Cart',
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-              child: Row(
-                children: [
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'My Cart',
-                        style: AppTextStyles.h2SemiBold.copyWith(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.notifications),
-                    icon: const Icon(Icons.notifications_none, size: 24),
-                  ),
-                ],
+              leading: const SizedBox.shrink(),
+              trailing: IconButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.notifications),
+                icon: const Icon(Icons.notifications_none, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Content
             Expanded(
               child: cartState.isLoading && cart.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : cart.isEmpty
-                      ? _buildEmptyCart()
-                      : _buildCartContent(cart),
+                  ? _buildEmptyCart()
+                  : _buildCartContent(cart),
             ),
 
             // Checkout button
@@ -69,7 +57,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                 child: AppButton(
-                  label: 'Go to Checkout',
+                  label: 'Proceed to Checkout',
                   onPressed: () =>
                       Navigator.pushNamed(context, AppRoutes.checkout),
                 ),
@@ -85,8 +73,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.shopping_cart_outlined,
-              size: 64, color: AppColors.primary200),
+          Icon(
+            Icons.shopping_cart_outlined,
+            size: 64,
+            color: AppColors.primary200,
+          ),
           const SizedBox(height: 20),
           Text(
             'Your Cart Is Empty!',
@@ -114,10 +105,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           // Order summary
           _SummaryRow(label: 'Sub-total', value: cart.subtotal),
           const SizedBox(height: 12),
-          _SummaryRow(label: 'VAT (%)', value: cart.vat),
+          _SummaryRow(label: 'VAT', value: cart.vat),
           const SizedBox(height: 12),
-          _SummaryRow(label: 'Shipping fee', value: cart.shippingFee),
-          const SizedBox(height: 12),
+          _SummaryRow(label: 'Shipping', value: cart.shippingFee),
+          const Divider(height: 24, color: AppColors.primary100),
           _SummaryRow(label: 'Total', value: cart.total, isBold: true),
           const SizedBox(height: 24),
         ],
@@ -146,7 +137,7 @@ class _CartItemCard extends ConsumerWidget {
           // Image
           Container(
             width: 73,
-            height: 93,
+            height: 87,
             decoration: BoxDecoration(
               color: AppColors.primary100.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
@@ -154,10 +145,12 @@ class _CartItemCard extends ConsumerWidget {
             child: item.image != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(item.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.image_outlined)),
+                    child: Image.network(
+                      item.image!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_outlined),
+                    ),
                   )
                 : const Icon(Icons.image_outlined, color: AppColors.primary200),
           ),
@@ -174,14 +167,20 @@ class _CartItemCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.name,
-                              style: AppTextStyles.b1Medium.copyWith(
-                                  fontSize: 14),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                          Text('Size ${item.size}',
-                              style: AppTextStyles.b2Regular
-                                  .copyWith(fontSize: 13)),
+                          Text(
+                            item.name,
+                            style: AppTextStyles.b1Medium.copyWith(
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Size ${item.size}',
+                            style: AppTextStyles.b2Regular.copyWith(
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -189,8 +188,11 @@ class _CartItemCard extends ConsumerWidget {
                       onTap: () => ref
                           .read(cartProvider.notifier)
                           .removeItem(item.variantId),
-                      child: const Icon(Icons.delete_outline,
-                          size: 18, color: AppColors.primary400),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.primary400,
+                      ),
                     ),
                   ],
                 ),
@@ -214,30 +216,34 @@ class _CartItemCard extends ConsumerWidget {
                           GestureDetector(
                             onTap: item.quantity > 1
                                 ? () => ref
-                                    .read(cartProvider.notifier)
-                                    .updateQuantity(
-                                      productId: item.productId,
-                                      variantId: item.variantId,
-                                      quantity: item.quantity - 1,
-                                    )
+                                      .read(cartProvider.notifier)
+                                      .updateQuantity(
+                                        productId: item.productId,
+                                        variantId: item.variantId,
+                                        quantity: item.quantity - 1,
+                                      )
                                 : null,
                             child: Padding(
                               padding: const EdgeInsets.all(6),
-                              child: Icon(Icons.remove, size: 14,
-                                  color: item.quantity > 1
-                                      ? AppColors.primary900
-                                      : AppColors.primary200),
+                              child: Icon(
+                                Icons.remove,
+                                size: 14,
+                                color: item.quantity > 1
+                                    ? AppColors.primary900
+                                    : AppColors.primary200,
+                              ),
                             ),
                           ),
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('${item.quantity}',
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                )),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '${item.quantity}',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                           GestureDetector(
                             onTap: () => ref

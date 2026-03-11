@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class HelpCenterScreen extends StatelessWidget {
   const HelpCenterScreen({super.key});
@@ -23,27 +24,13 @@ class HelpCenterScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('Help Center',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'Help Center',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Categories
             Expanded(
@@ -56,17 +43,25 @@ class HelpCenterScreen extends StatelessWidget {
                   final cat = _categories[i];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(cat['icon'] as IconData,
-                        size: 24, color: AppColors.primary900),
-                    title: Text(cat['title'] as String,
-                        style: AppTextStyles.b1Regular),
-                    trailing: const Icon(Icons.chevron_right,
-                        size: 20, color: AppColors.primary400),
+                    leading: Icon(
+                      cat['icon'] as IconData,
+                      size: 24,
+                      color: AppColors.primary900,
+                    ),
+                    title: Text(
+                      cat['title'] as String,
+                      style: AppTextStyles.b1Regular,
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: AppColors.primary400,
+                    ),
                     onTap: () {
-                      if ((cat['title'] as String)
-                          .contains('Customer Service')) {
-                        Navigator.pushNamed(
-                            context, AppRoutes.customerService);
+                      if ((cat['title'] as String).contains(
+                        'Customer Service',
+                      )) {
+                        Navigator.pushNamed(context, AppRoutes.customerService);
                       }
                     },
                   );

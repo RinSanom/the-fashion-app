@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class FAQsScreen extends StatefulWidget {
   const FAQsScreen({super.key});
@@ -12,42 +13,43 @@ class FAQsScreen extends StatefulWidget {
 class _FAQsScreenState extends State<FAQsScreen> {
   int _selectedCategory = 0;
   final _searchController = TextEditingController();
-  final List<String> _categories = [
-    'General',
-    'Account',
-    'Service',
-    'Policy',
-  ];
+  final List<String> _categories = ['General', 'Account', 'Service', 'Policy'];
 
   final List<Map<String, String>> _faqs = [
     {
       'q': 'How do I make a purchase?',
-      'a': 'Browse our products, select the item you want, choose your size and color, '
+      'a':
+          'Browse our products, select the item you want, choose your size and color, '
           'then add it to your cart. Proceed to checkout to complete your purchase.',
     },
     {
       'q': 'What payment methods are accepted?',
-      'a': 'We accept credit/debit cards (Visa, MasterCard), mobile payments, '
+      'a':
+          'We accept credit/debit cards (Visa, MasterCard), mobile payments, '
           'and cash on delivery in selected areas.',
     },
     {
       'q': 'How do I track my orders?',
-      'a': 'Go to My Orders from the Account screen, select the order you want to track, '
+      'a':
+          'Go to My Orders from the Account screen, select the order you want to track, '
           'and tap "Track Order" to see real-time status updates.',
     },
     {
       'q': 'Can I cancel or return an order?',
-      'a': 'You can cancel an order before it is shipped. For returns, please contact '
+      'a':
+          'You can cancel an order before it is shipped. For returns, please contact '
           'our support team within 14 days of delivery.',
     },
     {
       'q': 'How do I change my password?',
-      'a': 'Go to Account > My Details, or use the Forgot Password option on the '
+      'a':
+          'Go to Account > My Details, or use the Forgot Password option on the '
           'login screen to reset your password via email verification.',
     },
     {
       'q': 'Is my personal information secure?',
-      'a': 'Yes, we use industry-standard encryption and security measures to protect '
+      'a':
+          'Yes, we use industry-standard encryption and security measures to protect '
           'your personal data. We never share your information with third parties.',
     },
   ];
@@ -65,27 +67,13 @@ class _FAQsScreenState extends State<FAQsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('FAQs',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'FAQs',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Category chips
             Padding(
@@ -102,7 +90,9 @@ class _FAQsScreenState extends State<FAQsScreen> {
                       onTap: () => setState(() => _selectedCategory = i),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 8),
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isActive
                               ? AppColors.primary900
@@ -137,10 +127,14 @@ class _FAQsScreenState extends State<FAQsScreen> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search FAQs',
-                  hintStyle: AppTextStyles.b2Regular
-                      .copyWith(color: AppColors.primary400),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.primary400, size: 20),
+                  hintStyle: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary400,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primary400,
+                    size: 20,
+                  ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -167,9 +161,10 @@ class _FAQsScreenState extends State<FAQsScreen> {
                   return ExpansionTile(
                     initiallyExpanded: i == 0,
                     tilePadding: EdgeInsets.zero,
-                    title: Text(faq['q']!,
-                        style:
-                            AppTextStyles.b1Medium.copyWith(fontSize: 14)),
+                    title: Text(
+                      faq['q']!,
+                      style: AppTextStyles.b1Medium.copyWith(fontSize: 14),
+                    ),
                     iconColor: AppColors.primary900,
                     collapsedIconColor: AppColors.primary400,
                     children: [
@@ -177,9 +172,12 @@ class _FAQsScreenState extends State<FAQsScreen> {
                         alignment: Alignment.centerLeft,
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(faq['a']!,
-                              style: AppTextStyles.b2Regular.copyWith(
-                                  color: AppColors.primary500)),
+                          child: Text(
+                            faq['a']!,
+                            style: AppTextStyles.b2Regular.copyWith(
+                              color: AppColors.primary500,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -197,9 +195,11 @@ class _FAQsScreenState extends State<FAQsScreen> {
     final query = _searchController.text.toLowerCase();
     if (query.isEmpty) return _faqs;
     return _faqs
-        .where((faq) =>
-            faq['q']!.toLowerCase().contains(query) ||
-            faq['a']!.toLowerCase().contains(query))
+        .where(
+          (faq) =>
+              faq['q']!.toLowerCase().contains(query) ||
+              faq['a']!.toLowerCase().contains(query),
+        )
         .toList();
   }
 }

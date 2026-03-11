@@ -23,7 +23,7 @@ class VerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
-  static const int _codeLength = 6;
+  static const int _codeLength = 4;
 
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
@@ -128,7 +128,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Enter 6 Digit Code', style: AppTextStyles.h2SemiBold),
+              Text('Enter 4 Digit Code', style: AppTextStyles.h2SemiBold),
               const SizedBox(height: 10),
               Text(
                 email == null
@@ -147,11 +147,12 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 const SizedBox(height: 16),
               ],
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   _codeLength,
-                  (index) => SizedBox(
-                    width: 48,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    width: 64,
                     height: 60,
                     child: TextField(
                       controller: _controllers[index],

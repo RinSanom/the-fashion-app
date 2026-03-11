@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/models/product.dart';
 import 'package:mobile/providers/product_provider.dart';
 import 'package:mobile/providers/wishlist_provider.dart';
 import 'package:mobile/widgets/product_card.dart';
@@ -66,8 +67,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: AppTextStyles.h2SemiBold.copyWith(fontSize: 24),
                       ),
                       IconButton(
-                        onPressed: () =>
-                            Navigator.pushNamed(context, AppRoutes.notifications),
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.notifications,
+                        ),
                         icon: const Icon(Icons.notifications_none, size: 24),
                       ),
                     ],
@@ -90,13 +93,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              border:
-                                  Border.all(color: AppColors.primary100),
+                              border: Border.all(color: AppColors.primary100),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.search,
-                                    color: AppColors.primary400, size: 22),
+                                const Icon(
+                                  Icons.search,
+                                  color: AppColors.primary400,
+                                  size: 22,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Search',
@@ -117,8 +122,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           color: AppColors.primary900,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.tune,
-                            color: AppColors.primary0, size: 22),
+                        child: const Icon(
+                          Icons.tune,
+                          color: AppColors.primary0,
+                          size: 22,
+                        ),
                       ),
                     ],
                   ),
@@ -138,15 +146,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       padding: const EdgeInsets.only(right: 24),
                       itemBuilder: (context, index) {
                         final cat = _categories[index];
-                        final isActive =
-                            productsState.selectedCategory == cat;
+                        final isActive = productsState.selectedCategory == cat;
                         return GestureDetector(
                           onTap: () => ref
                               .read(productsProvider.notifier)
                               .selectCategory(cat),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 6),
+                              horizontal: 20,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.primary900
@@ -187,8 +196,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(productsState.error!,
-                            style: AppTextStyles.b1Regular),
+                        Text(
+                          productsState.error!,
+                          style: AppTextStyles.b1Regular,
+                        ),
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () =>
@@ -202,36 +213,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 19,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 161 / 246,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index >= productsState.products.length) {
-                          return null;
-                        }
-                        final product = productsState.products[index];
-                        final isSaved =
-                            wishlistState.containsProduct(product.id);
-                        return ProductCard(
-                          product: product,
-                          isFavorite: isSaved,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.productDetail,
-                            arguments: product.id,
-                          ),
-                          onFavoriteTap: () => ref
-                              .read(wishlistProvider.notifier)
-                              .toggleWishlist(product),
-                        );
-                      },
-                      childCount: productsState.products.length,
+                  sliver: SliverToBoxAdapter(
+                    child: _buildStaggeredGrid(
+                      productsState.products,
+                      wishlistState,
                     ),
                   ),
                 ),
@@ -247,6 +232,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStaggeredGrid(List<Product> products, WishlistState wishlist) {
+    final leftColumn = <Product>[];
+    final rightColumn = <Product>[];
+
+    for (int index = 0; index < products.length; index++) {
+      if (index.isEven) {
+        leftColumn.add(products[index]);
+      } else {
+        rightColumn.add(products[index]);
+      }
+    }
+
+    Widget buildColumn(List<Product> items, {double topOffset = 0}) {
+      if (items.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return Padding(
+        padding: EdgeInsets.only(top: topOffset),
+        child: Column(
+          children: [
+            for (int index = 0; index < items.length; index++) ...[
+              _buildProductTile(items[index], wishlist),
+              if (index != items.length - 1) const SizedBox(height: 16),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: buildColumn(leftColumn)),
+        const SizedBox(width: 19),
+        Expanded(child: buildColumn(rightColumn, topOffset: 20)),
+      ],
+    );
+  }
+
+  Widget _buildProductTile(Product product, WishlistState wishlist) {
+    final isSaved = wishlist.containsProduct(product.id);
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ProductCard(
+        product: product,
+        isFavorite: isSaved,
+        onTap: () => Navigator.pushNamed(
+          context,
+          AppRoutes.productDetail,
+          arguments: product.id,
+        ),
+        onFavoriteTap: () =>
+            ref.read(wishlistProvider.notifier).toggleWishlist(product),
       ),
     );
   }

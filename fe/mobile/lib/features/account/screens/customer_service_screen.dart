@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class CustomerServiceScreen extends StatefulWidget {
   const CustomerServiceScreen({super.key});
@@ -33,11 +34,13 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
     if (text.isEmpty) return;
 
     setState(() {
-      _messages.add(_ChatMessage(
-        text: text,
-        isUser: true,
-        time: TimeOfDay.now().format(context),
-      ));
+      _messages.add(
+        _ChatMessage(
+          text: text,
+          isUser: true,
+          time: TimeOfDay.now().format(context),
+        ),
+      );
       _messageController.clear();
     });
 
@@ -47,11 +50,14 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(
-          text: 'Thank you for reaching out! A support agent will be with you shortly.',
-          isUser: false,
-          time: TimeOfDay.now().format(context),
-        ));
+        _messages.add(
+          _ChatMessage(
+            text:
+                'Thank you for reaching out! A support agent will be with you shortly.',
+            isUser: false,
+            time: TimeOfDay.now().format(context),
+          ),
+        );
       });
       _scrollToBottom();
     });
@@ -76,27 +82,13 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('Customer Service',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'Customer Service',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Chat messages
             Expanded(
@@ -113,9 +105,7 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               decoration: const BoxDecoration(
                 color: AppColors.primary0,
-                border: Border(
-                  top: BorderSide(color: AppColors.primary100),
-                ),
+                border: Border(top: BorderSide(color: AppColors.primary100)),
               ),
               child: Row(
                 children: [
@@ -124,19 +114,24 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
                       controller: _messageController,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
-                        hintStyle: AppTextStyles.b2Regular
-                            .copyWith(color: AppColors.primary400),
+                        hintStyle: AppTextStyles.b2Regular.copyWith(
+                          color: AppColors.primary400,
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary100),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary100,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide:
-                              const BorderSide(color: AppColors.primary100),
+                          borderSide: const BorderSide(
+                            color: AppColors.primary100,
+                          ),
                         ),
                       ),
                       textInputAction: TextInputAction.send,
@@ -152,8 +147,11 @@ class _CustomerServiceScreenState extends State<CustomerServiceScreen> {
                         color: AppColors.primary900,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.send,
-                          color: AppColors.primary0, size: 20),
+                      child: const Icon(
+                        Icons.send,
+                        color: AppColors.primary0,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
@@ -188,8 +186,9 @@ class _ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
-        crossAxisAlignment:
-            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: message.isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             constraints: BoxConstraints(
@@ -203,16 +202,20 @@ class _ChatBubble extends StatelessWidget {
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft:
-                    message.isUser ? const Radius.circular(16) : Radius.zero,
-                bottomRight:
-                    message.isUser ? Radius.zero : const Radius.circular(16),
+                bottomLeft: message.isUser
+                    ? const Radius.circular(16)
+                    : Radius.zero,
+                bottomRight: message.isUser
+                    ? Radius.zero
+                    : const Radius.circular(16),
               ),
             ),
             child: Text(
               message.text,
               style: AppTextStyles.b2Regular.copyWith(
-                color: message.isUser ? AppColors.primary0 : AppColors.primary900,
+                color: message.isUser
+                    ? AppColors.primary0
+                    : AppColors.primary900,
               ),
             ),
           ),

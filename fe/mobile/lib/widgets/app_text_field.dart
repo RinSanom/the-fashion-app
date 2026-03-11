@@ -13,6 +13,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.validator,
     this.onChanged,
+    this.prefixIcon,
     this.suffixIcon,
     this.textInputAction,
     this.errorText,
@@ -26,6 +27,7 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final Widget? prefixIcon;
   final Widget? suffixIcon;
   final TextInputAction? textInputAction;
   final String? errorText;
@@ -49,6 +51,7 @@ class AppTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             errorText: errorText,
+            prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             constraints: const BoxConstraints(minHeight: 52),
             enabledBorder: OutlineInputBorder(

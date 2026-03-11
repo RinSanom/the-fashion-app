@@ -53,18 +53,12 @@ class CartNotifier extends StateNotifier<CartState> {
     if (result.isSuccess && result.data != null) {
       final data = result.data!['data'];
       if (data is Map<String, dynamic>) {
-        state = state.copyWith(
-          isLoading: false,
-          cart: Cart.fromJson(data),
-        );
+        state = state.copyWith(isLoading: false, cart: Cart.fromJson(data));
       } else {
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(isLoading: false, cart: const Cart());
       }
     } else {
-      state = state.copyWith(
-        isLoading: false,
-        error: result.message,
-      );
+      state = state.copyWith(isLoading: false, error: result.message);
     }
   }
 

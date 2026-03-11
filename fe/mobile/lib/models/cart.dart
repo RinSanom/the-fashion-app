@@ -35,16 +35,33 @@ class CartItem {
   }
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
+    final product = json['product'];
+    String? productName;
+    String? productImage;
+
+    if (product is Map<String, dynamic>) {
+      productName = product['name']?.toString();
+      final images = product['images'];
+      if (images is List && images.isNotEmpty && images.first is String) {
+        productImage = images.first as String;
+      }
+    }
+
     return CartItem(
       productId: json['productId']?.toString() ?? '',
       variantId: json['variantId']?.toString() ?? '',
-      name: json['productName']?.toString() ?? json['name']?.toString() ?? '',
+      name:
+          json['productName']?.toString() ??
+          json['name']?.toString() ??
+          productName ??
+          'Product',
       size: json['size']?.toString() ?? '',
       color: json['color']?.toString() ?? '',
       price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
-      quantity:
-          (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
-      image: json['image']?.toString(),
+      quantity: (json['quantity'] is num)
+          ? (json['quantity'] as num).toInt()
+          : 1,
+      image: json['image']?.toString() ?? productImage,
     );
   }
 
@@ -64,8 +81,7 @@ class Cart {
 
   final List<CartItem> items;
 
-  double get subtotal =>
-      items.fold(0, (sum, item) => sum + item.total);
+  double get subtotal => items.fold(0, (sum, item) => sum + item.total);
 
   double get vat => 0.0;
   double get shippingFee => items.isEmpty ? 0.0 : 0.10;
@@ -76,8 +92,12 @@ class Cart {
 
   factory Cart.fromJson(Map<String, dynamic> json) {
     final itemsList = <CartItem>[];
-    if (json['items'] is List) {
-      for (final item in json['items'] as List) {
+    final rawItems = (json['items'] is List)
+        ? json['items']
+        : (json['item'] is List ? json['item'] : null);
+
+    if (rawItems is List) {
+      for (final item in rawItems) {
         if (item is Map<String, dynamic>) {
           itemsList.add(CartItem.fromJson(item));
         }

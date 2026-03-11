@@ -10,17 +10,18 @@ class ProductCard extends StatelessWidget {
     this.onTap,
     this.onFavoriteTap,
     this.isFavorite = false,
+    this.discountText,
   });
 
   final Product product;
   final VoidCallback? onTap;
   final VoidCallback? onFavoriteTap;
   final bool isFavorite;
+  final String? discountText;
 
   @override
   Widget build(BuildContext context) {
-    final image =
-        product.images.isNotEmpty ? product.images.first : null;
+    final image = product.images.isNotEmpty ? product.images.first : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -35,28 +36,34 @@ class ProductCard extends StatelessWidget {
               height: 174,
               decoration: BoxDecoration(
                 color: AppColors.primary100.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Stack(
                 children: [
                   if (image != null)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       child: Image.network(
                         image,
                         width: 161,
                         height: 174,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.image_outlined,
-                              size: 40, color: AppColors.primary200),
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 40,
+                            color: AppColors.primary200,
+                          ),
                         ),
                       ),
                     )
                   else
                     const Center(
-                      child: Icon(Icons.image_outlined,
-                          size: 40, color: AppColors.primary200),
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: AppColors.primary200,
+                      ),
                     ),
                   // Heart icon
                   Positioned(
@@ -79,17 +86,36 @@ class ProductCard extends StatelessWidget {
                           ],
                         ),
                         child: Icon(
-                          isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_outline,
+                          isFavorite ? Icons.favorite : Icons.favorite_outline,
                           size: 18,
-                          color: isFavorite
-                              ? Colors.red
-                              : AppColors.primary900,
+                          color: isFavorite ? Colors.red : AppColors.primary900,
                         ),
                       ),
                     ),
                   ),
+                  if (discountText != null && discountText!.isNotEmpty)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary900,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          discountText!,
+                          style: AppTextStyles.b2Regular.copyWith(
+                            color: AppColors.primary0,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -99,7 +125,7 @@ class ProductCard extends StatelessWidget {
               product.name,
               style: AppTextStyles.b2Regular.copyWith(
                 color: AppColors.primary900,
-                fontSize: 14,
+                fontSize: 13,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -108,11 +134,9 @@ class ProductCard extends StatelessWidget {
             // Price
             Text(
               '\$ ${product.minPrice.toStringAsFixed(product.minPrice.truncateToDouble() == product.minPrice ? 0 : 2)}',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
+              style: AppTextStyles.b2Regular.copyWith(
                 color: AppColors.primary900,
+                fontSize: 14,
               ),
             ),
           ],

@@ -41,14 +41,19 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
   final Ref _ref;
 
   String? get _token => _ref.read(authStateProvider).accessToken;
+  String? get _refreshToken => _ref.read(authStateProvider).refreshToken;
 
   Future<void> loadWishlist() async {
     final token = _token;
     if (token == null) return;
+    final refreshToken = _refreshToken;
 
     state = state.copyWith(isLoading: true, clearError: true);
     final api = _ref.read(apiServiceProvider);
-    final result = await api.getWishlist(accessToken: token);
+    final result = await api.getWishlist(
+      accessToken: token,
+      refreshToken: refreshToken,
+    );
 
     if (!mounted) return;
 
@@ -76,6 +81,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
   Future<bool> toggleWishlist(Product product, {String? variantId}) async {
     final token = _token;
     if (token == null) return false;
+    final refreshToken = _refreshToken;
 
     final api = _ref.read(apiServiceProvider);
     final isInWishlist = state.containsProduct(product.id);
@@ -83,6 +89,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
     if (isInWishlist) {
       final result = await api.removeFromWishlist(
         accessToken: token,
+        refreshToken: refreshToken,
         productId: product.id,
       );
       if (result.isSuccess && mounted) {
@@ -96,6 +103,7 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
           (product.variants.isNotEmpty ? product.variants.first.variantId : '');
       final result = await api.addToWishlist(
         accessToken: token,
+        refreshToken: refreshToken,
         productId: product.id,
         variantId: vid,
       );

@@ -4,8 +4,11 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/order.dart';
+import 'package:mobile/providers/auth_provider.dart';
 import 'package:mobile/providers/order_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -14,13 +17,28 @@ class OrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+class _OrdersScreenState extends ConsumerState<OrdersScreen>
+    with WidgetsBindingObserver {
   int _tabIndex = 0; // 0=Ongoing, 1=Completed
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(() => ref.read(ordersProvider.notifier).loadOrders());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(ordersProvider.notifier).loadOrders();
+    }
   }
 
   @override
@@ -34,27 +52,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('My Orders',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'My Orders',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
+              ),
+              trailing: IconButton(
+                onPressed: () => ref.read(ordersProvider.notifier).loadOrders(),
+                icon: const Icon(Icons.refresh, size: 22),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Toggle tabs
             Padding(
@@ -89,8 +97,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               child: ordersState.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _tabIndex == 0
-                      ? _buildOrdersList(ongoing, isOngoing: true)
-                      : _buildOrdersList(completed, isOngoing: false),
+                  ? _buildOrdersList(ongoing, isOngoing: true)
+                  : _buildOrdersList(completed, isOngoing: false),
             ),
           ],
         ),
@@ -104,8 +112,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.inventory_2_outlined,
-                size: 64, color: AppColors.primary200),
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 64,
+              color: AppColors.primary200,
+            ),
             const SizedBox(height: 20),
             Text(
               isOngoing ? 'No Ongoing Orders!' : 'No Completed Orders!',
@@ -119,8 +130,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       itemCount: orders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) =>
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, i) =>
           _OrderCard(order: orders[i], isOngoing: isOngoing),
     );
   }
@@ -167,6 +178,65 @@ class _OrderCard extends ConsumerWidget {
   final Order order;
   final bool isOngoing;
 
+  bool get _requiresPayment => !order.paymentStatus.isPaid;
+
+  Future<void> _continueStripePayment(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final auth = ref.read(authStateProvider);
+    final token = auth.accessToken;
+    if (token == null) {
+      _showMessage(context, 'Please login first.');
+      return;
+    }
+
+    final api = ref.read(apiServiceProvider);
+    final result = await api.createStripeCheckoutSession(
+      accessToken: token,
+      refreshToken: auth.refreshToken,
+      orderId: order.id,
+    );
+
+    if (!context.mounted) return;
+
+    if (!result.isSuccess || result.data == null) {
+      _showMessage(
+        context,
+        result.message ?? 'Failed to open Stripe checkout.',
+      );
+      return;
+    }
+
+    final checkoutUrl = result.data!['checkoutUrl']?.toString() ?? '';
+    final uri = Uri.tryParse(checkoutUrl);
+
+    if (uri == null) {
+      _showMessage(context, 'Invalid Stripe checkout URL.');
+      return;
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!context.mounted) return;
+
+    if (!launched) {
+      _showMessage(context, 'Unable to open Stripe checkout.');
+      return;
+    }
+
+    _showMessage(
+      context,
+      'Stripe Checkout opened. Complete payment in your browser and return to the app.',
+    );
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final firstItem = order.items.isNotEmpty ? order.items.first : null;
@@ -192,33 +262,41 @@ class _OrderCard extends ConsumerWidget {
                 child: firstItem?.image != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(firstItem!.image!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.image_outlined)),
+                        child: Image.network(
+                          firstItem!.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.image_outlined),
+                        ),
                       )
-                    : const Icon(Icons.image_outlined,
-                        color: AppColors.primary200),
+                    : const Icon(
+                        Icons.image_outlined,
+                        color: AppColors.primary200,
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(firstItem?.productName ?? 'Order',
-                        style:
-                            AppTextStyles.b1Medium.copyWith(fontSize: 14),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      firstItem?.productName ?? 'Order',
+                      style: AppTextStyles.b1Medium.copyWith(fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     if (firstItem != null)
-                      Text('Size ${firstItem.size}',
-                          style: AppTextStyles.b2Regular
-                              .copyWith(fontSize: 13)),
+                      Text(
+                        'Size ${firstItem.size}',
+                        style: AppTextStyles.b2Regular.copyWith(fontSize: 13),
+                      ),
                     const SizedBox(height: 4),
                     // Status badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -233,14 +311,26 @@ class _OrderCard extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    if (_requiresPayment) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        order.paymentStatus.label,
+                        style: AppTextStyles.b2Regular.copyWith(
+                          fontSize: 12,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('\$ ${order.totalAmount.toStringAsFixed(2)}',
-                      style: AppTextStyles.b1Medium.copyWith(fontSize: 14)),
+                  Text(
+                    '\$ ${order.totalAmount.toStringAsFixed(2)}',
+                    style: AppTextStyles.b1Medium.copyWith(fontSize: 14),
+                  ),
                 ],
               ),
             ],
@@ -251,11 +341,13 @@ class _OrderCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.trackOrder,
-                  arguments: order,
-                ),
+                onPressed: () => _requiresPayment
+                    ? _continueStripePayment(context, ref)
+                    : Navigator.pushNamed(
+                        context,
+                        AppRoutes.trackOrder,
+                        arguments: order,
+                      ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primary900),
                   shape: RoundedRectangleBorder(
@@ -263,10 +355,13 @@ class _OrderCard extends ConsumerWidget {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                child: Text('Track Order',
-                    style: AppTextStyles.b2Regular.copyWith(
-                        color: AppColors.primary900,
-                        fontWeight: FontWeight.w500)),
+                child: Text(
+                  _requiresPayment ? 'Complete Payment' : 'Track Order',
+                  style: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary900,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             )
           else
@@ -275,10 +370,13 @@ class _OrderCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _showReviewSheet(context),
                 icon: const Icon(Icons.star, size: 16, color: Colors.amber),
-                label: Text('Leave a Review',
-                    style: AppTextStyles.b2Regular.copyWith(
-                        color: AppColors.primary900,
-                        fontWeight: FontWeight.w500)),
+                label: Text(
+                  'Leave a Review',
+                  style: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary900,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primary900),
                   shape: RoundedRectangleBorder(
@@ -328,8 +426,10 @@ class _OrderCard extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Leave a Review',
-                      style: AppTextStyles.b1Medium.copyWith(fontSize: 18)),
+                  Text(
+                    'Leave a Review',
+                    style: AppTextStyles.b1Medium.copyWith(fontSize: 18),
+                  ),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: const Icon(Icons.close),
@@ -337,9 +437,12 @@ class _OrderCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Text('How was your order?',
-                  style: AppTextStyles.b2Regular
-                      .copyWith(color: AppColors.primary500)),
+              Text(
+                'How was your order?',
+                style: AppTextStyles.b2Regular.copyWith(
+                  color: AppColors.primary500,
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -364,8 +467,9 @@ class _OrderCard extends ConsumerWidget {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: 'Write your review...',
-                  hintStyle: AppTextStyles.b2Regular
-                      .copyWith(color: AppColors.primary400),
+                  hintStyle: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary400,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary100),

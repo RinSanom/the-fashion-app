@@ -27,8 +27,9 @@ class OrderItem {
       size: json['size']?.toString() ?? '',
       color: json['color']?.toString() ?? '',
       price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
-      quantity:
-          (json['quantity'] is num) ? (json['quantity'] as num).toInt() : 1,
+      quantity: (json['quantity'] is num)
+          ? (json['quantity'] as num).toInt()
+          : 1,
       image: json['image']?.toString(),
     );
   }
@@ -47,35 +48,104 @@ class OrderItem {
 class OrderDelivery {
   const OrderDelivery({
     this.courier = '',
+    this.pickupAddress = const OrderAddress(),
+    this.destinationAddress = const OrderAddress(),
+  });
+
+  final String courier;
+  final OrderAddress pickupAddress;
+  final OrderAddress destinationAddress;
+
+  String get fullAddress => destinationAddress.fullAddress;
+  String get pickupFullAddress => pickupAddress.fullAddress;
+  String get destinationFullAddress => destinationAddress.fullAddress;
+
+  static OrderAddress _readAddress(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return OrderAddress.fromJson(value);
+    }
+    return const OrderAddress();
+  }
+
+  factory OrderDelivery.fromJson(Map<String, dynamic> json) {
+    final fallbackAddress = _readAddress(json['address']);
+    final destination = _readAddress(json['destinationAddress']);
+    final pickup = _readAddress(json['pickupAddress']);
+
+    final destinationAddress = destination.fullAddress.isNotEmpty
+        ? destination
+        : fallbackAddress;
+
+    return OrderDelivery(
+      courier: json['courier']?.toString() ?? '',
+      pickupAddress: pickup,
+      destinationAddress: destinationAddress,
+    );
+  }
+}
+
+class OrderAddress {
+  const OrderAddress({
     this.street = '',
     this.city = '',
     this.state = '',
     this.postalCode = '',
     this.country = '',
+    this.latitude = 0,
+    this.longitude = 0,
   });
 
-  final String courier;
   final String street;
   final String city;
   final String state;
   final String postalCode;
   final String country;
+  final double latitude;
+  final double longitude;
 
-  String get fullAddress => [street, city, state, postalCode, country]
-      .where((s) => s.isNotEmpty)
-      .join(', ');
+  String get fullAddress => [
+    street,
+    city,
+    state,
+    postalCode,
+    country,
+  ].where((s) => s.isNotEmpty).join(', ');
 
-  factory OrderDelivery.fromJson(Map<String, dynamic> json) {
-    final address =
-        json['address'] is Map<String, dynamic> ? json['address'] : json;
-    return OrderDelivery(
-      courier: json['courier']?.toString() ?? '',
-      street: (address['street'] ?? '').toString(),
-      city: (address['city'] ?? '').toString(),
-      state: (address['state'] ?? '').toString(),
-      postalCode: (address['postalCode'] ?? '').toString(),
-      country: (address['country'] ?? '').toString(),
+  factory OrderAddress.fromJson(Map<String, dynamic> json) {
+    final location = json['location'];
+    double latitude = 0;
+    double longitude = 0;
+
+    if (location is Map<String, dynamic>) {
+      final coordinates = location['coordinates'];
+      if (coordinates is List && coordinates.length >= 2) {
+        longitude = _asDouble(coordinates[0]);
+        latitude = _asDouble(coordinates[1]);
+      }
+    } else {
+      latitude = _asDouble(json['latitude']);
+      longitude = _asDouble(json['longitude']);
+    }
+
+    return OrderAddress(
+      street: (json['street'] ?? '').toString(),
+      city: (json['city'] ?? '').toString(),
+      state: (json['state'] ?? '').toString(),
+      postalCode: (json['postalCode'] ?? '').toString(),
+      country: (json['country'] ?? '').toString(),
+      latitude: latitude,
+      longitude: longitude,
     );
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 }
 
@@ -125,12 +195,43 @@ enum OrderStatus {
       this == OrderStatus.delivered || this == OrderStatus.cancelled;
 }
 
+enum OrderPaymentStatus {
+  pending,
+  completed,
+  failed;
+
+  static OrderPaymentStatus fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'completed':
+        return OrderPaymentStatus.completed;
+      case 'failed':
+        return OrderPaymentStatus.failed;
+      default:
+        return OrderPaymentStatus.pending;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case OrderPaymentStatus.pending:
+        return 'Payment Pending';
+      case OrderPaymentStatus.completed:
+        return 'Paid';
+      case OrderPaymentStatus.failed:
+        return 'Payment Failed';
+    }
+  }
+
+  bool get isPaid => this == OrderPaymentStatus.completed;
+}
+
 class Order {
   const Order({
     required this.id,
     required this.userId,
     required this.items,
     required this.status,
+    required this.paymentStatus,
     required this.delivery,
     this.totalAmount = 0,
     this.createdAt,
@@ -140,6 +241,7 @@ class Order {
   final String userId;
   final List<OrderItem> items;
   final OrderStatus status;
+  final OrderPaymentStatus paymentStatus;
   final OrderDelivery delivery;
   final double totalAmount;
   final DateTime? createdAt;
@@ -159,7 +261,14 @@ class Order {
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       items: itemsList,
-      status: OrderStatus.fromString(json['status']?.toString() ?? 'pending'),
+      status: OrderStatus.fromString(
+        json['orderStatus']?.toString() ??
+            json['status']?.toString() ??
+            'pending',
+      ),
+      paymentStatus: OrderPaymentStatus.fromString(
+        json['paymentStatus']?.toString() ?? 'pending',
+      ),
       delivery: json['delivery'] is Map<String, dynamic>
           ? OrderDelivery.fromJson(json['delivery'] as Map<String, dynamic>)
           : const OrderDelivery(),

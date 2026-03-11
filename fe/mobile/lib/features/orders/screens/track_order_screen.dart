@@ -1,89 +1,219 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/order.dart';
+import 'package:mobile/models/road_route.dart';
+import 'package:mobile/services/route_service.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
-class TrackOrderScreen extends StatelessWidget {
+class TrackOrderScreen extends StatefulWidget {
   const TrackOrderScreen({super.key, required this.order});
 
   final Order order;
 
   @override
+  State<TrackOrderScreen> createState() => _TrackOrderScreenState();
+}
+
+class _TrackOrderScreenState extends State<TrackOrderScreen> {
+  static const LatLng _fallbackShop = LatLng(11.568267, 104.713525);
+  static const LatLng _fallbackDestination = LatLng(11.5564, 104.9282);
+
+  final MapController _mapController = MapController();
+  final RouteService _routeService = RouteService();
+
+  RoadRoute? _roadRoute;
+  bool _isLoadingRoute = true;
+  bool _isMapReady = false;
+  int _routeRequestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoute();
+  }
+
+  @override
+  void dispose() {
+    _routeService.dispose();
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackOrderScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_routeInputsChanged(oldWidget.order, widget.order)) {
+      _loadRoute();
+      return;
+    }
+
+    if (oldWidget.order.status != widget.order.status) {
+      _scheduleCameraFit();
+    }
+  }
+
+  Future<void> _loadRoute() async {
+    final origin = _pickupPoint;
+    final destination = _destinationPoint(origin);
+    final requestId = ++_routeRequestId;
+
+    setState(() {
+      _isLoadingRoute = true;
+      _roadRoute = null;
+    });
+
+    final roadRoute = await _routeService.getRoute(
+      origin: origin,
+      destination: destination,
+    );
+
+    if (!mounted || requestId != _routeRequestId) {
+      return;
+    }
+
+    setState(() {
+      _roadRoute = roadRoute;
+      _isLoadingRoute = false;
+    });
+    _scheduleCameraFit();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pickup = _pickupPoint;
+    final destination = _destinationPoint(pickup);
+    final routePoints = _resolvedRoutePoints(pickup, destination);
+    final progress = _progressByStatus;
+    final traveledRoute = _pathUntilProgress(routePoints, progress);
+    final truckPoint = traveledRoute.isNotEmpty ? traveledRoute.last : pickup;
+
+    final itemCount = widget.order.items.fold<int>(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
+    final firstItemName = widget.order.items.isNotEmpty
+        ? widget.order.items.first.productName
+        : 'Your fashion items';
+
     return Scaffold(
       backgroundColor: AppColors.primary0,
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('Track Order',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'Track Order',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
-            // Map placeholder
             Expanded(
               flex: 3,
-              child: Container(
-                width: double.infinity,
-                color: AppColors.primary100.withValues(alpha: 0.3),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
                 child: Stack(
-                  alignment: Alignment.center,
                   children: [
-                    Icon(Icons.map_outlined,
-                        size: 80, color: AppColors.primary200),
-                    // Origin
-                    Positioned(
-                      left: 60,
-                      top: 80,
-                      child: _MapPin(
-                        icon: Icons.warehouse_outlined,
-                        color: AppColors.primary900,
-                      ),
-                    ),
-                    // Truck
-                    Positioned(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary900,
-                          shape: BoxShape.circle,
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCameraFit: _cameraFitFor(
+                          routePoints: routePoints,
+                          driverPoint: truckPoint,
+                          origin: pickup,
+                          destination: destination,
                         ),
-                        child: const Icon(Icons.local_shipping,
-                            color: AppColors.primary0, size: 24),
+                        onMapReady: _handleMapReady,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                        ),
                       ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.example.mobile',
+                        ),
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: routePoints,
+                              strokeWidth: 6,
+                              color: AppColors.primary900.withValues(
+                                alpha: 0.2,
+                              ),
+                              borderStrokeWidth: 1.5,
+                              borderColor: AppColors.primary0.withValues(
+                                alpha: 0.75,
+                              ),
+                            ),
+                            if (traveledRoute.length >= 2)
+                              Polyline(
+                                points: traveledRoute,
+                                strokeWidth: 5,
+                                color: AppColors.primary900,
+                                borderStrokeWidth: 1.2,
+                                borderColor: AppColors.primary0.withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
+                          ],
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: pickup,
+                              width: 44,
+                              height: 44,
+                              child: const _MapMarker(
+                                icon: Icons.storefront,
+                                color: AppColors.primary900,
+                              ),
+                            ),
+                            Marker(
+                              point: destination,
+                              width: 44,
+                              height: 44,
+                              child: const _MapMarker(
+                                icon: Icons.location_on,
+                                color: AppColors.error,
+                              ),
+                            ),
+                            Marker(
+                              point: truckPoint,
+                              width: 46,
+                              height: 46,
+                              child: const _MapMarker(
+                                icon: Icons.local_shipping,
+                                color: AppColors.primary800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    // Destination
-                    Positioned(
-                      right: 60,
-                      bottom: 80,
-                      child: _MapPin(
-                        icon: Icons.location_on,
-                        color: AppColors.error,
+                    if (_isLoadingRoute)
+                      const Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _MapInfoChip(label: 'Loading road route...'),
+                      )
+                    else if (_usedFallbackRoute)
+                      const Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _MapInfoChip(label: 'Road route unavailable'),
                       ),
-                    ),
                   ],
                 ),
               ),
             ),
 
-            // Bottom sheet
             Expanded(
               flex: 4,
               child: Container(
@@ -115,11 +245,59 @@ class TrackOrderScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text('Order Status',
-                          style: AppTextStyles.b1Medium.copyWith(fontSize: 18)),
+                      Text(
+                        'Order Status',
+                        style: AppTextStyles.b1Medium.copyWith(fontSize: 18),
+                      ),
                       const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary100.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.inventory_2_outlined,
+                              color: AppColors.primary800,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    firstItemName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.b1Medium.copyWith(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$itemCount item(s) delivering',
+                                    style: AppTextStyles.b2Regular.copyWith(
+                                      color: AppColors.primary500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              widget.order.status.label,
+                              style: AppTextStyles.b2Regular.copyWith(
+                                color: AppColors.primary800,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
-                      // Steps
                       _StatusStep(
                         title: 'Order Placed',
                         subtitle: 'Your order has been placed',
@@ -128,15 +306,23 @@ class TrackOrderScreen extends StatelessWidget {
                       ),
                       _StatusStep(
                         title: 'Packing',
-                        subtitle: order.delivery.fullAddress.isNotEmpty
-                            ? order.delivery.fullAddress
+                        subtitle:
+                            widget.order.delivery.pickupFullAddress.isNotEmpty
+                            ? 'Shop: ${widget.order.delivery.pickupFullAddress}'
                             : 'Preparing your items',
                         isCompleted: _isStepCompleted(OrderStatus.processing),
                         isLast: false,
                       ),
                       _StatusStep(
                         title: 'In Transit',
-                        subtitle: 'Your order is on the way',
+                        subtitle:
+                            widget
+                                .order
+                                .delivery
+                                .destinationFullAddress
+                                .isNotEmpty
+                            ? 'To: ${widget.order.delivery.destinationFullAddress}'
+                            : 'Your order is on the way',
                         isCompleted: _isStepCompleted(OrderStatus.shipped),
                         isLast: false,
                       ),
@@ -149,28 +335,57 @@ class TrackOrderScreen extends StatelessWidget {
 
                       const Divider(height: 32, color: AppColors.primary100),
 
-                      // Delivery person
+                      _AddressRow(
+                        label: 'From Shop',
+                        value:
+                            widget.order.delivery.pickupFullAddress.isNotEmpty
+                            ? widget.order.delivery.pickupFullAddress
+                            : 'Main shop',
+                      ),
+                      const SizedBox(height: 8),
+                      _AddressRow(
+                        label: 'Deliver To',
+                        value:
+                            widget
+                                .order
+                                .delivery
+                                .destinationFullAddress
+                                .isNotEmpty
+                            ? widget.order.delivery.destinationFullAddress
+                            : 'Destination address not available',
+                      ),
+
+                      const Divider(height: 32, color: AppColors.primary100),
+
                       Row(
                         children: [
                           CircleAvatar(
                             radius: 24,
                             backgroundColor: AppColors.primary100,
-                            child: const Icon(Icons.person,
-                                color: AppColors.primary500),
+                            child: const Icon(
+                              Icons.person,
+                              color: AppColors.primary500,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Delivery Person',
-                                    style: AppTextStyles.b1Medium
-                                        .copyWith(fontSize: 14)),
-                                Text(order.delivery.courier.isNotEmpty
-                                    ? order.delivery.courier
-                                    : 'Standard Delivery',
-                                    style: AppTextStyles.b2Regular.copyWith(
-                                        color: AppColors.primary500)),
+                                Text(
+                                  'Delivery Person',
+                                  style: AppTextStyles.b1Medium.copyWith(
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  widget.order.delivery.courier.isNotEmpty
+                                      ? widget.order.delivery.courier
+                                      : 'Standard Delivery',
+                                  style: AppTextStyles.b2Regular.copyWith(
+                                    color: AppColors.primary500,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -180,8 +395,11 @@ class TrackOrderScreen extends StatelessWidget {
                               color: AppColors.primary900,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.phone,
-                                color: AppColors.primary0, size: 20),
+                            child: const Icon(
+                              Icons.phone,
+                              color: AppColors.primary0,
+                              size: 20,
+                            ),
                           ),
                         ],
                       ),
@@ -203,14 +421,217 @@ class TrackOrderScreen extends StatelessWidget {
       OrderStatus.shipped,
       OrderStatus.delivered,
     ];
-    final currentIndex = progression.indexOf(order.status);
+    final currentIndex = progression.indexOf(widget.order.status);
     final stepIndex = progression.indexOf(step);
     return currentIndex >= stepIndex;
   }
+
+  bool _routeInputsChanged(Order previousOrder, Order nextOrder) {
+    return previousOrder.id != nextOrder.id ||
+        !_sameAddressLocation(
+          previousOrder.delivery.pickupAddress,
+          nextOrder.delivery.pickupAddress,
+        ) ||
+        !_sameAddressLocation(
+          previousOrder.delivery.destinationAddress,
+          nextOrder.delivery.destinationAddress,
+        );
+  }
+
+  bool _sameAddressLocation(OrderAddress a, OrderAddress b) {
+    return a.latitude == b.latitude && a.longitude == b.longitude;
+  }
+
+  LatLng get _pickupPoint {
+    final pickup = widget.order.delivery.pickupAddress;
+    if (_isValidCoordinate(pickup.latitude, pickup.longitude)) {
+      return LatLng(pickup.latitude, pickup.longitude);
+    }
+    return _fallbackShop;
+  }
+
+  LatLng _destinationPoint(LatLng pickup) {
+    final destination = widget.order.delivery.destinationAddress;
+    if (_isValidCoordinate(destination.latitude, destination.longitude)) {
+      return LatLng(destination.latitude, destination.longitude);
+    }
+
+    if (pickup.latitude != _fallbackShop.latitude ||
+        pickup.longitude != _fallbackShop.longitude) {
+      return _fallbackDestination;
+    }
+
+    return LatLng(pickup.latitude + 0.01, pickup.longitude + 0.01);
+  }
+
+  bool get _usedFallbackRoute => _roadRoute?.isFallback ?? false;
+
+  List<LatLng> _resolvedRoutePoints(LatLng pickup, LatLng destination) {
+    final points = _roadRoute?.points;
+    if (points != null && points.length >= 2) {
+      return points;
+    }
+    return [pickup, destination];
+  }
+
+  void _handleMapReady() {
+    _isMapReady = true;
+    _scheduleCameraFit();
+  }
+
+  void _scheduleCameraFit() {
+    if (!_isMapReady || !mounted) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isMapReady) {
+        return;
+      }
+
+      final pickup = _pickupPoint;
+      final destination = _destinationPoint(pickup);
+      final routePoints = _resolvedRoutePoints(pickup, destination);
+      final traveledRoute = _pathUntilProgress(routePoints, _progressByStatus);
+      final truckPoint = traveledRoute.isNotEmpty ? traveledRoute.last : pickup;
+
+      _mapController.fitCamera(
+        _cameraFitFor(
+          routePoints: routePoints,
+          driverPoint: truckPoint,
+          origin: pickup,
+          destination: destination,
+        ),
+      );
+    });
+  }
+
+  CameraFit _cameraFitFor({
+    required List<LatLng> routePoints,
+    required LatLng driverPoint,
+    required LatLng origin,
+    required LatLng destination,
+  }) {
+    return CameraFit.coordinates(
+      coordinates: [...routePoints, origin, destination, driverPoint],
+      padding: const EdgeInsets.fromLTRB(40, 40, 40, 132),
+      maxZoom: 15.5,
+      minZoom: 3,
+    );
+  }
+
+  double get _progressByStatus {
+    return switch (widget.order.status) {
+      OrderStatus.pending => 0.05,
+      OrderStatus.processing => 0.20,
+      OrderStatus.shipped => 0.68,
+      OrderStatus.delivered => 1.0,
+      OrderStatus.cancelled => 0.0,
+    };
+  }
+
+  List<LatLng> _pathUntilProgress(List<LatLng> points, double progress) {
+    if (points.length < 2) {
+      return points;
+    }
+
+    final clampedProgress = progress.clamp(0.0, 1.0);
+    if (clampedProgress <= 0) {
+      return [points.first];
+    }
+    if (clampedProgress >= 1) {
+      return points;
+    }
+
+    final distance = const Distance();
+    final segmentMeters = <double>[];
+    double totalMeters = 0;
+
+    for (int i = 0; i < points.length - 1; i += 1) {
+      final meters = distance.as(LengthUnit.Meter, points[i], points[i + 1]);
+      segmentMeters.add(meters);
+      totalMeters += meters;
+    }
+
+    if (totalMeters <= 0) {
+      return [points.first];
+    }
+
+    final targetMeters = totalMeters * clampedProgress;
+    double walked = 0;
+    final traveled = <LatLng>[points.first];
+
+    for (int i = 0; i < segmentMeters.length; i += 1) {
+      final segment = segmentMeters[i];
+      final from = points[i];
+      final to = points[i + 1];
+
+      if (walked + segment >= targetMeters) {
+        final remain = targetMeters - walked;
+        final t = segment <= 0 ? 0.0 : remain / segment;
+        traveled.add(_lerpPoint(from, to, t));
+        return traveled;
+      }
+
+      walked += segment;
+      traveled.add(to);
+    }
+
+    return traveled;
+  }
+
+  bool _isValidCoordinate(double lat, double lng) {
+    return lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180 &&
+        (lat != 0 || lng != 0);
+  }
+
+  LatLng _lerpPoint(LatLng from, LatLng to, double t) {
+    final normalizedT = t.clamp(0.0, 1.0);
+    final lat = from.latitude + (to.latitude - from.latitude) * normalizedT;
+    final lng = from.longitude + (to.longitude - from.longitude) * normalizedT;
+    return LatLng(lat, lng);
+  }
 }
 
-class _MapPin extends StatelessWidget {
-  const _MapPin({required this.icon, required this.color});
+class _AddressRow extends StatelessWidget {
+  const _AddressRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 84,
+          child: Text(
+            label,
+            style: AppTextStyles.b2Regular.copyWith(
+              color: AppColors.primary500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTextStyles.b2Regular.copyWith(
+              color: AppColors.primary900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapMarker extends StatelessWidget {
+  const _MapMarker({required this.icon, required this.color});
 
   final IconData icon;
   final Color color;
@@ -222,8 +643,35 @@ class _MapPin extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Icon(icon, color: color, size: 24),
+    );
+  }
+}
+
+class _MapInfoChip extends StatelessWidget {
+  const _MapInfoChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary0.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary100),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.b2Regular.copyWith(
+          color: AppColors.primary800,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
@@ -255,8 +703,9 @@ class _StatusStep extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isCompleted ? AppColors.primary900 : AppColors.primary0,
                 border: Border.all(
-                  color:
-                      isCompleted ? AppColors.primary900 : AppColors.primary200,
+                  color: isCompleted
+                      ? AppColors.primary900
+                      : AppColors.primary200,
                   width: 2,
                 ),
               ),
@@ -268,7 +717,9 @@ class _StatusStep extends StatelessWidget {
               Container(
                 width: 2,
                 height: 48,
-                color: isCompleted ? AppColors.primary900 : AppColors.primary200,
+                color: isCompleted
+                    ? AppColors.primary900
+                    : AppColors.primary200,
               ),
           ],
         ),
@@ -279,18 +730,22 @@ class _StatusStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: AppTextStyles.b1Medium.copyWith(
-                      fontSize: 14,
-                      color: isCompleted
-                          ? AppColors.primary900
-                          : AppColors.primary400,
-                    )),
-                Text(subtitle,
-                    style: AppTextStyles.b2Regular.copyWith(
-                      color: AppColors.primary500,
-                      fontSize: 12,
-                    )),
+                Text(
+                  title,
+                  style: AppTextStyles.b1Medium.copyWith(
+                    fontSize: 14,
+                    color: isCompleted
+                        ? AppColors.primary900
+                        : AppColors.primary400,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary500,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),

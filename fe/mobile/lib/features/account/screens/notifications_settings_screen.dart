@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/widgets/app_screen_header.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
@@ -32,27 +33,13 @@ class _NotificationsSettingsScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // App bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 24, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text('Notifications',
-                          style:
-                              AppTextStyles.h2SemiBold.copyWith(fontSize: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+            AppScreenHeader(
+              title: 'Notifications',
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 24),
               ),
             ),
-            const Divider(color: AppColors.primary100),
 
             // Settings list
             Expanded(
@@ -72,8 +59,7 @@ class _NotificationsSettingsScreenState
                         Text(key, style: AppTextStyles.b1Regular),
                         Switch(
                           value: value,
-                          onChanged: (v) =>
-                              setState(() => _settings[key] = v),
+                          onChanged: (v) => setState(() => _settings[key] = v),
                           activeColor: AppColors.primary900,
                           inactiveTrackColor: AppColors.primary200,
                         ),

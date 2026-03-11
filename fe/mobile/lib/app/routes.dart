@@ -8,6 +8,7 @@ import 'package:mobile/features/account/screens/faqs_screen.dart';
 import 'package:mobile/features/account/screens/help_center_screen.dart';
 import 'package:mobile/features/account/screens/my_details_screen.dart';
 import 'package:mobile/features/account/screens/notifications_settings_screen.dart';
+import 'package:mobile/features/account/screens/payment_methods_screen.dart';
 import 'package:mobile/features/auth/screens/forgot_password_screen.dart';
 import 'package:mobile/features/auth/screens/login_screen.dart';
 import 'package:mobile/features/auth/screens/onboarding_screen.dart';
@@ -17,6 +18,7 @@ import 'package:mobile/features/auth/screens/splash_screen.dart';
 import 'package:mobile/features/auth/screens/verification_screen.dart';
 import 'package:mobile/features/cart/screens/cart_screen.dart';
 import 'package:mobile/features/cart/screens/checkout_screen.dart';
+import 'package:mobile/features/cart/screens/payment_return_screen.dart';
 import 'package:mobile/features/main_shell.dart';
 import 'package:mobile/features/orders/screens/orders_screen.dart';
 import 'package:mobile/features/orders/screens/track_order_screen.dart';
@@ -48,6 +50,7 @@ class AppRoutes {
   static const String myDetails = '/my-details';
   static const String address = '/address';
   static const String notificationsSettings = '/notifications-settings';
+  static const String paymentMethods = '/payment-methods';
   static const String notifications = '/notifications';
   static const String faqs = '/faqs';
   static const String helpCenter = '/help-center';
@@ -56,6 +59,11 @@ class AppRoutes {
   static const String initialRoute = splash;
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    final deepLinkRoute = _buildPaymentReturnRoute(settings);
+    if (deepLinkRoute != null) {
+      return deepLinkRoute;
+    }
+
     switch (settings.name) {
       case splash:
         return _buildRoute(const SplashScreen(), settings);
@@ -133,6 +141,9 @@ class AppRoutes {
       case notificationsSettings:
         return _buildRoute(
             const AuthGuard(child: NotificationsSettingsScreen()), settings);
+      case paymentMethods:
+        return _buildRoute(
+            const AuthGuard(child: PaymentMethodsScreen()), settings);
       case notifications:
         // Placeholder notifications screen
         return _buildRoute(
@@ -163,6 +174,40 @@ class AppRoutes {
     RouteSettings settings,
   ) {
     return MaterialPageRoute(builder: (_) => child, settings: settings);
+  }
+
+  static MaterialPageRoute<dynamic>? _buildPaymentReturnRoute(
+    RouteSettings settings,
+  ) {
+    final name = settings.name;
+    if (name == null || name.isEmpty) {
+      return null;
+    }
+
+    Uri? uri;
+    try {
+      uri = Uri.parse(name);
+    } catch (_) {
+      return null;
+    }
+
+    final path = uri.path.toLowerCase();
+    final isPaymentReturn =
+        path == '/success' ||
+        path == '/cancel' ||
+        path == '/payment/success' ||
+        path == '/payment/cancel' ||
+        (uri.scheme == 'fashionapp' &&
+            (path.endsWith('/success') || path.endsWith('/cancel')));
+
+    if (!isPaymentReturn) {
+      return null;
+    }
+
+    return _buildRoute(
+      AuthGuard(child: PaymentReturnScreen(uri: uri)),
+      settings,
+    );
   }
 
   static String? _emailFromArgs(Object? arguments) {
