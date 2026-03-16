@@ -1,5 +1,6 @@
 import {
   CreatePaymentDTO,
+  CreateStripeCheckoutSessionDTO,
   UpdatePaymentStatusDTO,
   PaymentResponseDTO,
   PaymentFilterDTO,
@@ -9,6 +10,25 @@ import {
 import { IPayment } from "../models/payment";
 
 export default interface PaymentService {
+  createStripeCheckoutSession(
+    data: CreateStripeCheckoutSessionDTO & { userId?: string }
+  ): Promise<{ checkoutUrl: string; payment: PaymentResponseDTO }>;
+
+  handleStripeCheckoutCompleted(payload: {
+    sessionId: string;
+    paymentIntentId?: string | null;
+    orderId?: string | null;
+  }): Promise<void>;
+
+  handleStripeCheckoutExpired(payload: {
+    sessionId: string;
+    orderId?: string | null;
+  }): Promise<void>;
+
+  handleStripeRefund(payload: {
+    paymentIntentId?: string | null;
+  }): Promise<void>;
+
   // Create new payment
   createPayment(data: CreatePaymentDTO): Promise<PaymentResponseDTO>;
 

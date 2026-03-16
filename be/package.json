@@ -4,9 +4,14 @@
   "description": "",
   "scripts": {
     "dev": "bun --watch src/server.ts",
+    "dev:local-redis": "REDIS_HOST=127.0.0.1 REDIS_PORT=6379 bun --watch src/server.ts",
     "build": "tsc && tsc-alias",
     "vercel-build": "tsc && tsc-alias",
-    "start": "bun run dist/server.js"
+    "start": "bun run build && bun run dist/server.js",
+    "redis:up": "docker compose up -d redis",
+    "redis:down": "docker compose stop redis",
+    "seed:catalog": "node scripts/seed-catalog.js",
+    "localize:product-images": "node scripts/localize-product-images.js"
   },
   "keywords": [],
   "author": "Vanneth Yann && Rin Sanom",
@@ -23,6 +28,7 @@
     "@middlewares": "./src/middlewares"
   },
   "dependencies": {
+    "@types/multer": "^2.1.0",
     "bakong-khqr": "^1.0.20",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -33,10 +39,12 @@
     "jsonwebtoken": "^9.0.3",
     "module-alias": "^2.2.3",
     "mongoose": "^9.0.1",
+    "multer": "^2.1.1",
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
+    "stripe": "^20.4.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "ws": "^8.19.0"

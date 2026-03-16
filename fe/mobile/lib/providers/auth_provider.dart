@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/models/register_request.dart';
+import 'package:mobile/models/verification_flow.dart';
 import 'package:mobile/services/api_service.dart';
 import 'package:mobile/services/auth_service.dart';
 
@@ -132,6 +133,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(
       isSubmitting: false,
       successMessage: result.message ?? 'Account created successfully.',
+      clearVerificationFlow: true,
     );
 
     return AuthActionResult.success(
@@ -139,7 +141,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  Future<AuthActionResult> sendVerificationCode(String email) async {
+  Future<AuthActionResult> sendVerificationCode(
+    String email,
+    VerificationPurpose purpose,
+  ) async {
     state = state.copyWith(
       isSubmitting: true,
       clearError: true,
@@ -147,7 +152,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       fieldErrors: const {},
     );
 
-    final result = await _apiService.sendVerificationCode(email);
+    final result = await _apiService.sendVerificationCode(email, purpose);
 
     if (!result.isSuccess) {
       final message = result.message ?? 'Unable to send verification code.';
@@ -161,7 +166,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     state = state.copyWith(
       isSubmitting: false,
+      clearVerificationFlow: true,
       verificationEmail: email,
+      verificationPurpose: purpose,
       isVerificationCodeValid: false,
       successMessage: result.message ?? 'Verification code sent.',
     );
@@ -171,7 +178,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
   }
 
-  Future<AuthActionResult> verifyCode(String code) async {
+  Future<AuthActionResult> verifyCode({
+    required String email,
+    required String code,
+    required VerificationPurpose purpose,
+  }) async {
     state = state.copyWith(
       isSubmitting: true,
       clearError: true,
@@ -179,7 +190,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       fieldErrors: const {},
     );
 
-    final result = await _apiService.verifyCode(code);
+    final result = await _apiService.verifyCode(
+      email: email,
+      code: code,
+      purpose: purpose,
+    );
 
     if (!result.isSuccess) {
       final message = result.message ?? 'Invalid verification code.';
@@ -191,8 +206,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return AuthActionResult.failure(message, fieldErrors: result.fieldErrors);
     }
 
+    final data = result.data?['data'];
+    final verificationToken = data is Map<String, dynamic>
+        ? data['verificationToken']?.toString()
+        : null;
+
     state = state.copyWith(
       isSubmitting: false,
+      verificationEmail: email,
+      verificationPurpose: purpose,
+      verificationToken: verificationToken,
       isVerificationCodeValid: true,
       successMessage: result.message ?? 'Verification successful.',
     );
@@ -220,7 +243,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       isSubmitting: false,
       isAuthenticated: false,
       isVerificationCodeValid: false,
-      verificationEmail: null,
+      clearVerificationFlow: true,
       clearTokens: true,
     );
   }
@@ -232,8 +255,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       clearTokens: true,
       clearError: true,
       clearSuccess: true,
-      verificationEmail: null,
-      isVerificationCodeValid: false,
+      clearVerificationFlow: true,
     );
   }
 
@@ -246,10 +268,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void clearVerificationFlow() {
-    state = state.copyWith(
-      verificationEmail: null,
-      isVerificationCodeValid: false,
-    );
+    state = state.copyWith(clearVerificationFlow: true);
   }
 
   String? _extractUserIdFromToken(String token) {
@@ -291,8 +310,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 class AuthState {
-  static const _unset = Object();
-
   const AuthState({
     required this.isBootstrapping,
     required this.isAuthenticated,
@@ -304,6 +321,8 @@ class AuthState {
     this.refreshToken,
     this.userId,
     this.verificationEmail,
+    this.verificationPurpose,
+    this.verificationToken,
     this.isVerificationCodeValid = false,
   });
 
@@ -317,6 +336,8 @@ class AuthState {
   final String? refreshToken;
   final String? userId;
   final String? verificationEmail;
+  final VerificationPurpose? verificationPurpose;
+  final String? verificationToken;
   final bool isVerificationCodeValid;
 
   factory AuthState.initial() {
@@ -337,11 +358,14 @@ class AuthState {
     String? accessToken,
     String? refreshToken,
     String? userId,
-    Object? verificationEmail = _unset,
+    String? verificationEmail,
+    VerificationPurpose? verificationPurpose,
+    String? verificationToken,
     bool? isVerificationCodeValid,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearTokens = false,
+    bool clearVerificationFlow = false,
   }) {
     return AuthState(
       isBootstrapping: isBootstrapping ?? this.isBootstrapping,
@@ -355,11 +379,18 @@ class AuthState {
       accessToken: clearTokens ? null : (accessToken ?? this.accessToken),
       refreshToken: clearTokens ? null : (refreshToken ?? this.refreshToken),
       userId: clearTokens ? null : (userId ?? this.userId),
-      verificationEmail: verificationEmail == _unset
-          ? this.verificationEmail
-          : verificationEmail as String?,
-      isVerificationCodeValid:
-          isVerificationCodeValid ?? this.isVerificationCodeValid,
+      verificationEmail: clearVerificationFlow
+          ? verificationEmail
+          : (verificationEmail ?? this.verificationEmail),
+      verificationPurpose: clearVerificationFlow
+          ? verificationPurpose
+          : (verificationPurpose ?? this.verificationPurpose),
+      verificationToken: clearVerificationFlow
+          ? verificationToken
+          : (verificationToken ?? this.verificationToken),
+      isVerificationCodeValid: clearVerificationFlow
+          ? false
+          : (isVerificationCodeValid ?? this.isVerificationCodeValid),
     );
   }
 }

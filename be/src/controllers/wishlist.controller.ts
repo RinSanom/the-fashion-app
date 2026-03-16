@@ -1,7 +1,6 @@
 import { IUser } from "@models/user";
-import { WishlistService } from "@services/wishlist.service";
+import { WishlistItemInput, WishlistService } from "@services/wishlist.service";
 import { Request, Response } from "express";
-import { ObjectId } from "mongoose";
 
 class WishlistController {
   private wishlistService: WishlistService;
@@ -32,7 +31,7 @@ class WishlistController {
 
   async addWishlists(req: Request, res: Response) {
     const user = req.user as IUser;
-    const item = req.body;
+    const item = req.body as WishlistItemInput;
 
     await this.wishlistService.addItemToWishlist(user._id as any, item);
 
@@ -44,12 +43,12 @@ class WishlistController {
   }
 
   async removeWishlists(req: Request, res: Response) {
-    const itemId = req.params.productId;
     const user = req.user as IUser;
+    const { productId } = req.body as { productId: string };
 
     await this.wishlistService.removeItemFromWishlist(
       user._id as any,
-      itemId as any
+      productId
     );
 
     res.status(200).send({

@@ -1,13 +1,36 @@
+import { CardNetwork } from "./card.request";
+
+export type PaymentMethod =
+  | "BAKONG"
+  | "CREDIT_CARD"
+  | "UNION_PAY"
+  | "STRIPE";
+
+export type PaymentStatus =
+  | "CREATED"
+  | "PENDING"
+  | "COMPLETED"
+  | "FAILED"
+  | "EXPIRED"
+  | "SUCCEEDED"
+  | "REFUNDED";
+
 export interface CreatePaymentDTO {
   orderId: string;
-  method: "BAKONG";
+  method: PaymentMethod;
   amount: number;
   currency: "KHR" | "USD";
   expiesAt?: Date;
+  expiresAt?: Date;
+  savedCardId?: string;
+}
+
+export interface CreateStripeCheckoutSessionDTO {
+  orderId: string;
 }
 
 export interface UpdatePaymentStatusDTO {
-  status: "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
+  status: PaymentStatus;
   transactionRef?: string;
   paidAt?: Date;
 }
@@ -15,13 +38,22 @@ export interface UpdatePaymentStatusDTO {
 export interface PaymentResponseDTO {
   id: string;
   orderId: string;
-  method: "BAKONG";
+  orderNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  method: PaymentMethod;
   amount: number;
   currency: "KHR" | "USD";
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
   khqrString?: string;
   md5Hash?: string;
   transactionRef?: string;
-  status: "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
+  cardLast4?: string;
+  cardNetwork?: CardNetwork;
+  status: PaymentStatus;
   paidAt?: Date;
   expiresAt?: Date;
   createdAt: Date;
@@ -29,8 +61,8 @@ export interface PaymentResponseDTO {
 }
 
 export interface PaymentFilterDTO {
-  status?: "CREATED" | "PENDING" | "COMPLETED" | "FAILED" | "EXPIRED";
-  method?: "BAKONG";
+  status?: PaymentStatus;
+  method?: PaymentMethod;
   minAmount?: number;
   maxAmount?: number;
   startDate?: Date;

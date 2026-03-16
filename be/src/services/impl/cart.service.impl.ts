@@ -1,9 +1,62 @@
 import CartModel, { ICart } from "@models/cart";
+import ProductModel from "@models/product";
 import AddTooCartService from "@services/addToCart.service";
 import { AddToCartDTO } from "dtos/request/cart/addToCartDTO.request";
 import mongoose, { Types } from "mongoose";
 
 class CartServiceImpl implements AddTooCartService {
+  private async enrichCart(cart: ICart | null): Promise<any | null> {
+    if (!cart) {
+      return null;
+    }
+
+    const productIds = Array.from(
+      new Set(cart.item.map((item) => item.productId.toString()))
+    );
+
+    const products = await ProductModel.getModel()
+      .find({ _id: { $in: productIds } } as any)
+      .lean();
+
+    const productMap = new Map(
+      products.map((product: any) => [product._id.toString(), product])
+    );
+
+    return {
+      _id: cart._id,
+      userId: cart.userId,
+      status: cart.status,
+      item: cart.item.map((item) => {
+        const product = productMap.get(item.productId.toString());
+        const image =
+          Array.isArray(product?.images) && product.images.length > 0
+            ? product.images[0]
+            : null;
+
+        return {
+          productId: item.productId,
+          variantId: item.variantId,
+          size: item.size,
+          color: item.color,
+          price: item.price,
+          quantity: item.quantity,
+          productName: product?.name ?? "Product",
+          image,
+          product: product
+            ? {
+                _id: product._id,
+                productId: product.productId,
+                name: product.name,
+                images: product.images ?? [],
+              }
+            : null,
+        };
+      }),
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt,
+    };
+  }
+
   async addToCart(data: AddToCartDTO): Promise<ICart> {
     const cartModel = CartModel.getModel();
 
@@ -55,14 +108,16 @@ class CartServiceImpl implements AddTooCartService {
     }
   }
 
-  async getCartItemsByUserId(userId: string): Promise<ICart | null> {
+  async getCartItemsByUserId(userId: string): Promise<any | null> {
     const cartModel = CartModel.getModel();
-    return await cartModel
+    const cart = await cartModel
       .findOne({
         userId: new Types.ObjectId(userId),
         status: "active",
       })
       .exec();
+
+    return this.enrichCart(cart);
   }
 
   async updateCartItemQuantity(
@@ -82,8 +137,10 @@ class CartServiceImpl implements AddTooCartService {
     }
 
     const itemIndex = cart.item.findIndex((item) => {
-      item.productId.toString() === productId &&
-        item.variantId.toString() === variantId;
+      return (
+        item.productId.toString() === productId &&
+        item.variantId.toString() === variantId
+      );
     });
 
     if (itemIndex === -1) {

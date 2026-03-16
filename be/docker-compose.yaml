@@ -1,16 +1,17 @@
-version: "3.9"
-
 services:
-  backend:
-    image: fashion-app
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - redis
-
   redis:
     image: redis:7
+    container_name: fashion-app-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-data:

@@ -1,3 +1,6 @@
+import 'package:mobile/models/product_review.dart';
+import 'package:mobile/utils/media_url.dart';
+
 class ProductVariant {
   const ProductVariant({
     required this.variantId,
@@ -49,6 +52,7 @@ class Product {
     this.images = const [],
     this.rating = 0.0,
     this.reviewCount = 0,
+    this.reviews = const [],
     this.createdAt,
   });
 
@@ -63,6 +67,7 @@ class Product {
   final List<String> images;
   final double rating;
   final int reviewCount;
+  final List<ProductReview> reviews;
   final DateTime? createdAt;
 
   double get minPrice {
@@ -89,7 +94,12 @@ class Product {
     final imagesList = <String>[];
     if (json['images'] is List) {
       for (final img in json['images'] as List) {
-        if (img is String) imagesList.add(img);
+        if (img is String) {
+          final resolved = resolveMediaUrl(img);
+          if (resolved.isNotEmpty) {
+            imagesList.add(resolved);
+          }
+        }
       }
     }
 
@@ -109,6 +119,12 @@ class Product {
       reviewCount: (json['reviewCount'] is num)
           ? (json['reviewCount'] as num).toInt()
           : 0,
+      reviews: (json['reviews'] is List)
+          ? (json['reviews'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(ProductReview.fromJson)
+                .toList()
+          : const [],
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
           : null,

@@ -4,6 +4,7 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/product.dart';
+import 'package:mobile/models/product_review.dart';
 import 'package:mobile/providers/cart_provider.dart';
 import 'package:mobile/providers/product_provider.dart';
 import 'package:mobile/providers/wishlist_provider.dart';
@@ -239,7 +240,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 images[i],
                 fit: BoxFit.cover,
                 width: double.infinity,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   color: AppColors.primary100.withValues(alpha: 0.3),
                   child: const Center(
                     child: Icon(
@@ -325,19 +326,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final sampleReviews = [
-      _ReviewData(
-        name: 'Ava Lee',
-        rating: product.rating > 0 ? product.rating : 4.5,
-        comment: 'Loved the quality and fit. It looks exactly like the photos.',
-      ),
-      _ReviewData(
-        name: 'Mia Chen',
-        rating: product.rating > 0 ? product.rating - 0.2 : 4.3,
-        comment: 'Fast delivery and nice material. I would buy another color.',
-      ),
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -346,7 +334,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           children: [
             Text('Reviews', style: AppTextStyles.b1Medium),
             Text(
-              '${product.rating.toStringAsFixed(1)} / 5',
+              '${product.rating.toStringAsFixed(1)} / 5  (${product.reviewCount})',
               style: AppTextStyles.b2Regular.copyWith(
                 color: AppColors.primary500,
               ),
@@ -354,7 +342,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...sampleReviews.map((review) => _ReviewCard(review: review)),
+        if (product.reviews.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary100),
+            ),
+            child: Text(
+              'Ratings are available, but written reviews have not been loaded yet.',
+              style: AppTextStyles.b2Regular.copyWith(
+                color: AppColors.primary500,
+              ),
+            ),
+          )
+        else
+          ...product.reviews.map((review) => _ReviewCard(review: review)),
       ],
     );
   }
@@ -526,22 +530,10 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-class _ReviewData {
-  const _ReviewData({
-    required this.name,
-    required this.rating,
-    required this.comment,
-  });
-
-  final String name;
-  final double rating;
-  final String comment;
-}
-
 class _ReviewCard extends StatelessWidget {
   const _ReviewCard({required this.review});
 
-  final _ReviewData review;
+  final ProductReview review;
 
   @override
   Widget build(BuildContext context) {
@@ -559,7 +551,9 @@ class _ReviewCard extends StatelessWidget {
             radius: 16,
             backgroundColor: AppColors.primary100,
             child: Text(
-              review.name.isNotEmpty ? review.name[0].toUpperCase() : '?',
+              review.userName.isNotEmpty
+                  ? review.userName[0].toUpperCase()
+                  : '?',
               style: AppTextStyles.b2Regular.copyWith(
                 color: AppColors.primary900,
                 fontWeight: FontWeight.w600,
@@ -575,18 +569,29 @@ class _ReviewCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        review.name,
+                        review.userName,
                         style: AppTextStyles.b2Regular.copyWith(
                           color: AppColors.primary900,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
+                    if (review.updatedAt != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          _formatDate(review.updatedAt!),
+                          style: AppTextStyles.b2Regular.copyWith(
+                            color: AppColors.primary400,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                     Row(
                       children: List.generate(
                         5,
                         (index) => Icon(
-                          index < review.rating.round()
+                          index < review.rating
                               ? Icons.star
                               : Icons.star_border,
                           color: Colors.amber,
@@ -609,5 +614,23 @@ class _ReviewCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _formatDate(DateTime date) {
+    final month = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ][date.month - 1];
+    return '$month ${date.day}, ${date.year}';
   }
 }

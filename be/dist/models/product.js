@@ -66,6 +66,7 @@ class ProductModel {
                     stock: { type: Number, default: 0 },
                 },
             ],
+            images: { type: [String], default: [] },
         }, { timestamps: true });
         this.model = mongoose_1.default.model("products", productSchema);
     }

@@ -12,12 +12,29 @@ export interface IOrder extends Document {
     price: number;
     quantity: number;
     productName: string;
+    image?: string;
   }[];
   totalAmount: number;
   orderStatus: "pending" | "shipped" | "delivered" | "cancelled";
   paymentStatus: "pending" | "completed" | "failed";
   delivery: {
     address: {
+      street: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+      location: LocationMetaData;
+    };
+    pickupAddress: {
+      street: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+      location: LocationMetaData;
+    };
+    destinationAddress: {
       street: string;
       city: string;
       state: string;
@@ -56,6 +73,7 @@ class OrderModel {
               price: { type: Number, required: true },
               quantity: { type: Number, required: true },
               productName: { type: String, required: true },
+              image: { type: String, required: false },
             },
           ],
           totalAmount: { type: Number, required: true },
@@ -71,6 +89,42 @@ class OrderModel {
           },
           delivery: {
             address: {
+              street: { type: String, required: true },
+              city: { type: String, required: true },
+              state: { type: String, required: true },
+              postalCode: { type: String, required: true },
+              country: { type: String, required: true },
+              location: {
+                type: {
+                  type: String,
+                  enum: ["Point"],
+                  required: true,
+                },
+                coordinates: {
+                  type: [Number],
+                  required: true,
+                },
+              },
+            },
+            pickupAddress: {
+              street: { type: String, required: true },
+              city: { type: String, required: true },
+              state: { type: String, required: true },
+              postalCode: { type: String, required: true },
+              country: { type: String, required: true },
+              location: {
+                type: {
+                  type: String,
+                  enum: ["Point"],
+                  required: true,
+                },
+                coordinates: {
+                  type: [Number],
+                  required: true,
+                },
+              },
+            },
+            destinationAddress: {
               street: { type: String, required: true },
               city: { type: String, required: true },
               state: { type: String, required: true },

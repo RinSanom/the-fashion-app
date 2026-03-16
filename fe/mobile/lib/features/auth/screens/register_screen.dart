@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/features/auth/screens/verification_screen.dart';
 import 'package:mobile/models/register_request.dart';
+import 'package:mobile/models/verification_flow.dart';
 import 'package:mobile/providers/auth_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
 import 'package:mobile/widgets/app_text_field.dart';
@@ -109,7 +111,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final result = await ref
         .read(authStateProvider.notifier)
-        .register(_toRegisterPayload());
+        .sendVerificationCode(
+          _emailController.text.trim(),
+          VerificationPurpose.register,
+        );
 
     if (!mounted || !result.isSuccess) {
       return;
@@ -117,14 +122,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result.message ?? 'Account created successfully.'),
+        content: Text(result.message ?? 'Verification code sent.'),
         backgroundColor: AppColors.success,
       ),
     );
 
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
+    Navigator.of(context).pushNamed(
+      AppRoutes.verification,
+      arguments: VerificationArgs(
+        email: _emailController.text.trim(),
+        purpose: VerificationPurpose.register,
+        pendingRegistration: _toRegisterPayload(),
+      ),
+    );
   }
 
   @override
@@ -244,7 +254,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 AppButton(
-                  label: 'Create an Account',
+                  label: 'Continue',
                   onPressed: _submit,
                   isLoading: isSubmitting,
                   enabled: canSubmit,

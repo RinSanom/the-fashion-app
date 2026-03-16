@@ -14,6 +14,7 @@ class RegisterRequest {
   final String firstName;
   final String lastName;
   final String email;
+  final String? emailVerificationToken;
   final String password;
   final String confirmPassword;
 
@@ -31,6 +32,7 @@ class RegisterRequest {
     required this.firstName,
     required this.lastName,
     required this.email,
+    this.emailVerificationToken,
     required this.password,
     required this.confirmPassword,
     this.gender = Gender.notSpecified,
@@ -44,6 +46,35 @@ class RegisterRequest {
       _$RegisterRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$RegisterRequestToJson(this);
+
+  RegisterRequest copyWith({
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? emailVerificationToken,
+    String? password,
+    String? confirmPassword,
+    Gender? gender,
+    UserRole? role,
+    String? status,
+    List<OauthProvider>? oauthProviders,
+    List<Address>? addresses,
+  }) {
+    return RegisterRequest(
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      emailVerificationToken:
+          emailVerificationToken ?? this.emailVerificationToken,
+      password: password ?? this.password,
+      confirmPassword: confirmPassword ?? this.confirmPassword,
+      gender: gender ?? this.gender,
+      role: role ?? this.role,
+      status: status ?? this.status,
+      oauthProviders: oauthProviders ?? this.oauthProviders,
+      addresses: addresses ?? this.addresses,
+    );
+  }
 }
 
 // ============================================

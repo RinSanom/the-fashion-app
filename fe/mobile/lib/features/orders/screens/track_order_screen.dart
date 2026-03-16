@@ -1,42 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/order.dart';
 import 'package:mobile/models/road_route.dart';
+import 'package:mobile/providers/auth_provider.dart';
+import 'package:mobile/providers/order_provider.dart';
 import 'package:mobile/services/route_service.dart';
 import 'package:mobile/widgets/app_screen_header.dart';
 
-class TrackOrderScreen extends StatefulWidget {
+class TrackOrderScreen extends ConsumerStatefulWidget {
   const TrackOrderScreen({super.key, required this.order});
 
   final Order order;
 
   @override
-  State<TrackOrderScreen> createState() => _TrackOrderScreenState();
+  ConsumerState<TrackOrderScreen> createState() => _TrackOrderScreenState();
 }
 
-class _TrackOrderScreenState extends State<TrackOrderScreen> {
+class _TrackOrderScreenState extends ConsumerState<TrackOrderScreen>
+    with WidgetsBindingObserver {
   static const LatLng _fallbackShop = LatLng(11.568267, 104.713525);
   static const LatLng _fallbackDestination = LatLng(11.5564, 104.9282);
+  static const Duration _refreshInterval = Duration(seconds: 15);
 
   final MapController _mapController = MapController();
   final RouteService _routeService = RouteService();
 
+  late Order _order;
+  Timer? _refreshTimer;
   RoadRoute? _roadRoute;
   bool _isLoadingRoute = true;
   bool _isMapReady = false;
+  bool _isRefreshingOrder = false;
   int _routeRequestId = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _order = widget.order;
     _loadRoute();
+    _refreshOrder();
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _refreshOrder());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
     _routeService.dispose();
     _mapController.dispose();
     super.dispose();
@@ -45,14 +61,69 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   @override
   void didUpdateWidget(covariant TrackOrderScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_routeInputsChanged(oldWidget.order, widget.order)) {
+    if (oldWidget.order.id != widget.order.id) {
+      _applyOrderUpdate(widget.order);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshOrder();
+    }
+  }
+
+  void _applyOrderUpdate(Order nextOrder) {
+    final shouldReloadRoute = _routeInputsChanged(_order, nextOrder);
+    final statusChanged = _order.status != nextOrder.status;
+
+    setState(() {
+      _order = nextOrder;
+    });
+
+    if (_order.status.isCompleted) {
+      _refreshTimer?.cancel();
+    }
+
+    if (shouldReloadRoute) {
       _loadRoute();
+    } else if (statusChanged) {
+      _scheduleCameraFit();
+    }
+  }
+
+  Future<void> _refreshOrder() async {
+    if (_isRefreshingOrder || !mounted || _order.id.isEmpty) {
       return;
     }
 
-    if (oldWidget.order.status != widget.order.status) {
-      _scheduleCameraFit();
+    final authState = ref.read(authStateProvider);
+    final token = authState.accessToken;
+    if (token == null) {
+      return;
     }
+
+    _isRefreshingOrder = true;
+    final api = ref.read(apiServiceProvider);
+    final result = await api.getOrderById(
+      accessToken: token,
+      refreshToken: authState.refreshToken,
+      orderId: _order.id,
+    );
+    _isRefreshingOrder = false;
+
+    if (!mounted || !result.isSuccess || result.data == null) {
+      return;
+    }
+
+    final rawOrder = result.data!['data'];
+    if (rawOrder is! Map<String, dynamic>) {
+      return;
+    }
+
+    final refreshedOrder = Order.fromJson(rawOrder);
+    ref.read(ordersProvider.notifier).upsertOrder(refreshedOrder);
+    _applyOrderUpdate(refreshedOrder);
   }
 
   Future<void> _loadRoute() async {
@@ -90,12 +161,12 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
     final traveledRoute = _pathUntilProgress(routePoints, progress);
     final truckPoint = traveledRoute.isNotEmpty ? traveledRoute.last : pickup;
 
-    final itemCount = widget.order.items.fold<int>(
+    final itemCount = _order.items.fold<int>(
       0,
       (sum, item) => sum + item.quantity,
     );
-    final firstItemName = widget.order.items.isNotEmpty
-        ? widget.order.items.first.productName
+    final firstItemName = _order.items.isNotEmpty
+        ? _order.items.first.productName
         : 'Your fashion items';
 
     return Scaffold(
@@ -287,7 +358,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                               ),
                             ),
                             Text(
-                              widget.order.status.label,
+                              _order.status.label,
                               style: AppTextStyles.b2Regular.copyWith(
                                 color: AppColors.primary800,
                                 fontWeight: FontWeight.w600,
@@ -307,8 +378,8 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                       _StatusStep(
                         title: 'Packing',
                         subtitle:
-                            widget.order.delivery.pickupFullAddress.isNotEmpty
-                            ? 'Shop: ${widget.order.delivery.pickupFullAddress}'
+                            _order.delivery.pickupFullAddress.isNotEmpty
+                            ? 'Shop: ${_order.delivery.pickupFullAddress}'
                             : 'Preparing your items',
                         isCompleted: _isStepCompleted(OrderStatus.processing),
                         isLast: false,
@@ -316,12 +387,11 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                       _StatusStep(
                         title: 'In Transit',
                         subtitle:
-                            widget
-                                .order
+                            _order
                                 .delivery
                                 .destinationFullAddress
                                 .isNotEmpty
-                            ? 'To: ${widget.order.delivery.destinationFullAddress}'
+                            ? 'To: ${_order.delivery.destinationFullAddress}'
                             : 'Your order is on the way',
                         isCompleted: _isStepCompleted(OrderStatus.shipped),
                         isLast: false,
@@ -338,20 +408,19 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                       _AddressRow(
                         label: 'From Shop',
                         value:
-                            widget.order.delivery.pickupFullAddress.isNotEmpty
-                            ? widget.order.delivery.pickupFullAddress
+                            _order.delivery.pickupFullAddress.isNotEmpty
+                            ? _order.delivery.pickupFullAddress
                             : 'Main shop',
                       ),
                       const SizedBox(height: 8),
                       _AddressRow(
                         label: 'Deliver To',
                         value:
-                            widget
-                                .order
+                            _order
                                 .delivery
                                 .destinationFullAddress
                                 .isNotEmpty
-                            ? widget.order.delivery.destinationFullAddress
+                            ? _order.delivery.destinationFullAddress
                             : 'Destination address not available',
                       ),
 
@@ -379,8 +448,8 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                                   ),
                                 ),
                                 Text(
-                                  widget.order.delivery.courier.isNotEmpty
-                                      ? widget.order.delivery.courier
+                                  _order.delivery.courier.isNotEmpty
+                                      ? _order.delivery.courier
                                       : 'Standard Delivery',
                                   style: AppTextStyles.b2Regular.copyWith(
                                     color: AppColors.primary500,
@@ -421,7 +490,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
       OrderStatus.shipped,
       OrderStatus.delivered,
     ];
-    final currentIndex = progression.indexOf(widget.order.status);
+    final currentIndex = progression.indexOf(_order.status);
     final stepIndex = progression.indexOf(step);
     return currentIndex >= stepIndex;
   }
@@ -443,7 +512,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   }
 
   LatLng get _pickupPoint {
-    final pickup = widget.order.delivery.pickupAddress;
+    final pickup = _order.delivery.pickupAddress;
     if (_isValidCoordinate(pickup.latitude, pickup.longitude)) {
       return LatLng(pickup.latitude, pickup.longitude);
     }
@@ -451,7 +520,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   }
 
   LatLng _destinationPoint(LatLng pickup) {
-    final destination = widget.order.delivery.destinationAddress;
+    final destination = _order.delivery.destinationAddress;
     if (_isValidCoordinate(destination.latitude, destination.longitude)) {
       return LatLng(destination.latitude, destination.longitude);
     }
@@ -521,7 +590,7 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   }
 
   double get _progressByStatus {
-    return switch (widget.order.status) {
+    return switch (_order.status) {
       OrderStatus.pending => 0.05,
       OrderStatus.processing => 0.20,
       OrderStatus.shipped => 0.68,

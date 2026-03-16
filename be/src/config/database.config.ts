@@ -1,16 +1,12 @@
 import mongoose from "mongoose";
 
 class DBConfig {
-  public mongoURI: string;
-
-  constructor() {
-    this.mongoURI =
-      process.env.MONGO_URI ||
-      "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
-  }
-
   public async connectDB() {
     try {
+      const mongoURI =
+        process.env.MONGO_URI ||
+        "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
+
       const options: any = {
         authSource: process.env.MONGO_AUTH_DB || "admin",
         serverSelectionTimeoutMS:
@@ -19,7 +15,7 @@ class DBConfig {
         socketTimeoutMS: 10000,
       };
 
-      await mongoose.connect(this.mongoURI, options);
+      await mongoose.connect(mongoURI, options);
 
       console.info("Database connected successfully.");
     } catch (err) {

@@ -4,6 +4,7 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/features/auth/screens/verification_screen.dart';
+import 'package:mobile/models/verification_flow.dart';
 import 'package:mobile/providers/auth_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
 import 'package:mobile/widgets/app_text_field.dart';
@@ -55,7 +56,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final email = _emailController.text.trim();
     final result = await ref
         .read(authStateProvider.notifier)
-        .sendVerificationCode(email);
+        .sendVerificationCode(email, VerificationPurpose.passwordReset);
 
     if (!mounted || !result.isSuccess) {
       return;
@@ -70,7 +71,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     Navigator.of(context).pushNamed(
       AppRoutes.verification,
-      arguments: VerificationArgs(email: email),
+      arguments: VerificationArgs(
+        email: email,
+        purpose: VerificationPurpose.passwordReset,
+      ),
     );
   }
 

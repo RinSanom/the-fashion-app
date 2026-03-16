@@ -34,6 +34,7 @@ const routeValidation = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
             (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/send-verification-code") ||
             (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/verify-code") ||
             (0, permitRoutes_1.permitRoutes)(req, "GET", "/api/v1/products") ||
+            (0, permitRoutes_1.permitRoutes)(req, "GET", "/api/v1/products/*") ||
             (0, permitRoutes_1.permitRoutes)(req, "GET", "/api/v1/cart") ||
             (0, permitRoutes_1.permitRoutes)(req, "GET", "/api/v1/cart/*") ||
             (0, permitRoutes_1.permitRoutes)(req, "POST", "/api/v1/order") ||

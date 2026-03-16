@@ -8,6 +8,8 @@ import userToken from "@models/token";
 import { Model } from "mongoose";
 import ConflictContentException from "@exceptions/conflictContent.exception";
 import UnauthorizedException from "@exceptions/unauthorized.exception";
+import BadRequestException from "@exceptions/badRequest.exception";
+import redisUtils from "@utils/redisUtils";
 
 import {
   generateAccessToken,
@@ -32,8 +34,9 @@ class AuthServiceImpl implements IAuthService {
         fullName: credential._json.name,
         email: credential._json.email,
         gender: credential.gender ?? "not_specified",
-        role: credential.role ?? "user",
+        role: "user",
         status: "active",
+        emailVerifiedAt: new Date(),
         passwordHash: await bcrypt.genSalt(10),
         oauthProviders: [
           {
@@ -90,8 +93,9 @@ class AuthServiceImpl implements IAuthService {
         fullName: credential.name,
         email: credential.email,
         gender: credential.gender ?? "not_specified",
-        role: credential.role ?? "user",
+        role: "user",
         status: "active",
+        emailVerifiedAt: new Date(),
         passwordHash: await bcrypt.genSalt(10),
         oauthProviders: [
           {
@@ -178,17 +182,33 @@ class AuthServiceImpl implements IAuthService {
   }
 
   async register(credential: registerRequest): Promise<any | string> {
-    const existing = await this.model.findOne({ email: credential.email });
+    const email = credential.email.trim().toLowerCase();
+
+    const existing = await this.model.findOne({ email });
     if (existing) {
       throw new ConflictContentException("email already exist");
     }
 
+    const hasValidVerificationToken =
+      await redisUtils.consumeVerificationToken(
+        email,
+        "register",
+        credential.emailVerificationToken
+      );
+
+    if (!hasValidVerificationToken) {
+      throw new BadRequestException(
+        "Email verification is required before registration"
+      );
+    }
+
     const created = await this.model.create({
       fullName: credential.firstName + " " + credential.lastName,
-      email: credential.email,
+      email,
       gender: credential.gender ?? "not_specified",
-      role: credential.role ?? "user",
+      role: "user",
       status: "active",
+      emailVerifiedAt: new Date(),
       passwordHash: await bcrypt.hash(credential.password, 10),
     });
 

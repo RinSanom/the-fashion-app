@@ -4,26 +4,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/app_colors.dart';
 import 'package:mobile/app/theme/app_text_styles.dart';
+import 'package:mobile/models/register_request.dart';
+import 'package:mobile/models/verification_flow.dart';
 import 'package:mobile/providers/auth_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
 
 class VerificationArgs {
-  const VerificationArgs({required this.email});
+  const VerificationArgs({
+    required this.email,
+    required this.purpose,
+    this.pendingRegistration,
+  });
 
   final String email;
+  final VerificationPurpose purpose;
+  final RegisterRequest? pendingRegistration;
 }
 
 class VerificationScreen extends ConsumerStatefulWidget {
-  const VerificationScreen({super.key, this.email});
+  const VerificationScreen({super.key, this.args});
 
-  final String? email;
+  final VerificationArgs? args;
 
   @override
   ConsumerState<VerificationScreen> createState() => _VerificationScreenState();
 }
 
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
-  static const int _codeLength = 4;
+  static const int _codeLength = 6;
 
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
@@ -72,21 +80,65 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       return;
     }
 
+    final authState = ref.read(authStateProvider);
+    final email = widget.args?.email ?? authState.verificationEmail;
+    final purpose = widget.args?.purpose ?? authState.verificationPurpose;
+
+    if (email == null || purpose == null) {
+      return;
+    }
+
     final result = await ref
         .read(authStateProvider.notifier)
-        .verifyCode(_otpCode);
+        .verifyCode(email: email, code: _otpCode, purpose: purpose);
 
     if (!mounted || !result.isSuccess) {
+      return;
+    }
+
+    if (purpose == VerificationPurpose.register) {
+      final pendingRegistration = widget.args?.pendingRegistration;
+      final verificationToken = ref.read(authStateProvider).verificationToken;
+
+      if (pendingRegistration == null || verificationToken == null) {
+        return;
+      }
+
+      final registerResult = await ref
+          .read(authStateProvider.notifier)
+          .register(
+            pendingRegistration.copyWith(
+              emailVerificationToken: verificationToken,
+            ),
+          );
+
+      if (!mounted || !registerResult.isSuccess) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            registerResult.message ?? 'Account created successfully.',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+
+      ref.read(authStateProvider.notifier).clearVerificationFlow();
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
       return;
     }
 
     Navigator.of(context).pushNamed(AppRoutes.resetPassword);
   }
 
-  Future<void> _resendCode(String email) async {
+  Future<void> _resendCode(String email, VerificationPurpose purpose) async {
     final result = await ref
         .read(authStateProvider.notifier)
-        .sendVerificationCode(email);
+        .sendVerificationCode(email, purpose);
     if (!mounted) {
       return;
     }
@@ -110,7 +162,14 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final authState = ref.watch(authStateProvider);
     final isSubmitting = authState.isSubmitting;
 
-    final email = widget.email ?? authState.verificationEmail;
+    final email = widget.args?.email ?? authState.verificationEmail;
+    final purpose = widget.args?.purpose ?? authState.verificationPurpose;
+    final title = purpose == VerificationPurpose.register
+        ? 'Verify your email'
+        : 'Enter 6 Digit Code';
+    final subtitle = email == null
+        ? 'Enter the verification code sent to your email.'
+        : 'Enter the 6-digit code sent to $email.';
 
     return Scaffold(
       backgroundColor: AppColors.primary0,
@@ -128,12 +187,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Enter 4 Digit Code', style: AppTextStyles.h2SemiBold),
+              Text(title, style: AppTextStyles.h2SemiBold),
               const SizedBox(height: 10),
               Text(
-                email == null
-                    ? 'Enter the verification code sent to your email.'
-                    : 'Enter the code sent to $email.',
+                subtitle,
                 style: AppTextStyles.b1Regular.copyWith(
                   color: AppColors.primary500,
                 ),
@@ -146,43 +203,57 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  _codeLength,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    width: 64,
-                    height: 60,
-                    child: TextField(
-                      controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      enabled: !isSubmitting,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.b1Medium,
-                      maxLength: 1,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        counterText: '',
-                        contentPadding: EdgeInsets.zero,
-                        hintText: '0',
-                        hintStyle: AppTextStyles.b1Regular.copyWith(
-                          color: AppColors.primary400,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  final rawWidth =
+                      (constraints.maxWidth - ((_codeLength - 1) * spacing)) /
+                      _codeLength;
+                  final fieldWidth = rawWidth.clamp(44.0, 56.0).toDouble();
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _codeLength,
+                      (index) => Container(
+                        margin: EdgeInsets.only(
+                          right: index == _codeLength - 1 ? 0 : spacing,
+                        ),
+                        width: fieldWidth,
+                        height: 60,
+                        child: TextField(
+                          controller: _controllers[index],
+                          focusNode: _focusNodes[index],
+                          enabled: !isSubmitting,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.b1Medium,
+                          maxLength: 1,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            counterText: '',
+                            contentPadding: EdgeInsets.zero,
+                            hintText: '0',
+                            hintStyle: AppTextStyles.b1Regular.copyWith(
+                              color: AppColors.primary400,
+                            ),
+                          ),
+                          onChanged: (value) => _onCodeChanged(index, value),
                         ),
                       ),
-                      onChanged: (value) => _onCodeChanged(index, value),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 18),
               Align(
                 alignment: Alignment.center,
                 child: TextButton(
-                  onPressed: (email == null || isSubmitting)
+                  onPressed: (email == null || purpose == null || isSubmitting)
                       ? null
-                      : () => _resendCode(email),
+                      : () => _resendCode(email, purpose),
                   child: RichText(
                     text: TextSpan(
                       style: AppTextStyles.b2Regular.copyWith(
@@ -204,7 +275,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               ),
               const Spacer(),
               AppButton(
-                label: 'Verify',
+                label: purpose == VerificationPurpose.register
+                    ? 'Verify and Create Account'
+                    : 'Verify',
                 onPressed: _verify,
                 isLoading: isSubmitting,
                 enabled: _canVerify && !isSubmitting,

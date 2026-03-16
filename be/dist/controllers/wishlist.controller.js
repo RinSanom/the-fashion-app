@@ -44,9 +44,9 @@ class WishlistController {
     }
     removeWishlists(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const itemId = req.params.productId;
             const user = req.user;
-            yield this.wishlistService.removeItemFromWishlist(user._id, itemId);
+            const { productId } = req.body;
+            yield this.wishlistService.removeItemFromWishlist(user._id, productId);
             res.status(200).send({
                 message: "Item removed from wishlist successfully",
                 isSuccess: true,

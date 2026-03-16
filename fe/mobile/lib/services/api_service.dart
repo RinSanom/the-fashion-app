@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:mobile/models/verification_flow.dart';
 
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
@@ -68,12 +69,25 @@ class ApiService {
     return _post('/auth/logout', headers: {'x-refresh-token': refreshToken});
   }
 
-  Future<ApiResult<Map<String, dynamic>>> sendVerificationCode(String email) {
-    return _post('/send-verification-code', body: {'email': email});
+  Future<ApiResult<Map<String, dynamic>>> sendVerificationCode(
+    String email,
+    VerificationPurpose purpose,
+  ) {
+    return _post(
+      '/send-verification-code',
+      body: {'email': email, 'purpose': purpose.apiValue},
+    );
   }
 
-  Future<ApiResult<Map<String, dynamic>>> verifyCode(String code) {
-    return _post('/verify-code', body: {'code': code});
+  Future<ApiResult<Map<String, dynamic>>> verifyCode({
+    required String email,
+    required String code,
+    required VerificationPurpose purpose,
+  }) {
+    return _post(
+      '/verify-code',
+      body: {'email': email, 'code': code, 'purpose': purpose.apiValue},
+    );
   }
 
   Future<ApiResult<Map<String, dynamic>>> getProducts({
@@ -89,6 +103,19 @@ class ApiService {
 
   Future<ApiResult<Map<String, dynamic>>> getProductById(String productId) {
     return _get('/products/$productId');
+  }
+
+  Future<ApiResult<Map<String, dynamic>>> submitProductReview({
+    required String accessToken,
+    String? refreshToken,
+    required String productId,
+    required Map<String, dynamic> body,
+  }) {
+    return _post(
+      '/products/$productId/reviews',
+      body: body,
+      headers: _authHeader(accessToken, refreshToken: refreshToken),
+    );
   }
 
   Future<ApiResult<Map<String, dynamic>>> addToCart({
@@ -379,10 +406,7 @@ class ApiService {
     );
   }
 
-  Map<String, String> _authHeader(
-    String token, {
-    String? refreshToken,
-  }) => {
+  Map<String, String> _authHeader(String token, {String? refreshToken}) => {
     'Authorization': 'Bearer $token',
     if (refreshToken != null && refreshToken.trim().isNotEmpty)
       'x-refresh-token': refreshToken.trim(),
@@ -655,12 +679,17 @@ class ApiService {
     }
 
     final sanitizedBody = body == null ? null : _sanitizeForLog(body);
-    final bodyLog =
-        sanitizedBody == null ? '' : ' body=${jsonEncode(sanitizedBody)}';
+    final bodyLog = sanitizedBody == null
+        ? ''
+        : ' body=${jsonEncode(sanitizedBody)}';
     debugPrint('[ApiService] --> $method $uri$bodyLog');
   }
 
-  Object _sanitizeForLog(Object value) {
+  Object? _sanitizeForLog(Object? value) {
+    if (value == null) {
+      return null;
+    }
+
     if (value is Map<String, dynamic>) {
       final sanitized = <String, dynamic>{};
       for (final entry in value.entries) {

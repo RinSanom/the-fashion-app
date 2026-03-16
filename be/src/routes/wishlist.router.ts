@@ -10,7 +10,7 @@ const wishlistRouter = Router();
 
 const wishlistController = new WishlistController(new WishlistServiceImpl());
 
-wishlistRouter.get("/", wishlistController.getWishlists);
+wishlistRouter.get("/", asyncHandler(wishlistController.getWishlists));
 wishlistRouter.post(
   "/",
   validationMiddleware.addWishlists,
@@ -20,8 +20,8 @@ wishlistRouter.post(
 
 wishlistRouter.delete(
   "/",
-  ValidationMiddleware,
   validationMiddleware.removeWishlists,
+  ValidationMiddleware,
   asyncHandler(wishlistController.removeWishlists)
 );
 

@@ -41,6 +41,6 @@ const otp_controller_1 = __importDefault(require("../controllers/otp.controller"
 const validation_middleware_1 = __importStar(require("../middlewares/validation.middleware"));
 const asyncHandler_1 = __importDefault(require("../utils/asyncHandler"));
 const otpRouter = express_1.default.Router();
-otpRouter.post("/send-verification-code", validation_middleware_1.default.OTP_ctr_sendMailVerificationCode, validation_middleware_1.ValidationMiddleware, otp_controller_1.default.sendVerificationCode, (0, asyncHandler_1.default)(otp_controller_1.default.sendVerificationCode));
-otpRouter.post("/verify-code", validation_middleware_1.default.OTP_ctr_verifyCode, validation_middleware_1.ValidationMiddleware, otp_controller_1.default.verifyCode, (0, asyncHandler_1.default)(otp_controller_1.default.verifyCode));
+otpRouter.post("/send-verification-code", validation_middleware_1.default.OTP_ctr_sendMailVerificationCode, validation_middleware_1.ValidationMiddleware, (0, asyncHandler_1.default)(otp_controller_1.default.sendVerificationCode));
+otpRouter.post("/verify-code", validation_middleware_1.default.OTP_ctr_verifyCode, validation_middleware_1.ValidationMiddleware, (0, asyncHandler_1.default)(otp_controller_1.default.verifyCode));
 exports.default = otpRouter;

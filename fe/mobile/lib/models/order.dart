@@ -1,3 +1,5 @@
+import 'package:mobile/utils/media_url.dart';
+
 class OrderItem {
   const OrderItem({
     required this.productId,
@@ -8,6 +10,10 @@ class OrderItem {
     required this.price,
     required this.quantity,
     this.image,
+    this.hasReview = false,
+    this.reviewId,
+    this.reviewRating,
+    this.reviewComment,
   });
 
   final String productId;
@@ -18,8 +24,14 @@ class OrderItem {
   final double price;
   final int quantity;
   final String? image;
+  final bool hasReview;
+  final String? reviewId;
+  final int? reviewRating;
+  final String? reviewComment;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final resolvedImage = resolveMediaUrl(json['image']?.toString());
+
     return OrderItem(
       productId: json['productId']?.toString() ?? '',
       variantId: json['variantId']?.toString() ?? '',
@@ -30,7 +42,13 @@ class OrderItem {
       quantity: (json['quantity'] is num)
           ? (json['quantity'] as num).toInt()
           : 1,
-      image: json['image']?.toString(),
+      image: resolvedImage.isEmpty ? null : resolvedImage,
+      hasReview: json['hasReview'] == true,
+      reviewId: json['reviewId']?.toString(),
+      reviewRating: (json['reviewRating'] is num)
+          ? (json['reviewRating'] as num).toInt()
+          : null,
+      reviewComment: json['reviewComment']?.toString(),
     );
   }
 

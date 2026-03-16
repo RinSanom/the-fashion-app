@@ -1,6 +1,10 @@
-import { IUser } from "@models/user";
+import {
+  ProfileResponseDTO,
+  UpdateProfileDTO,
+} from "@dtos/request/profile.request";
+import { ObjectId } from "mongoose";
 
 export interface ProfileService {
-  update(user: IUser): Promise<IUser | any>;
-  delete(id: string): Promise<void>;
+  show(userId: ObjectId): Promise<ProfileResponseDTO>;
+  update(userId: ObjectId, payload: UpdateProfileDTO): Promise<ProfileResponseDTO>;
 }

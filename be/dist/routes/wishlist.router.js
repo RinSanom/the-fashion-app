@@ -43,7 +43,7 @@ const validation_middleware_1 = __importStar(require("../middlewares/validation.
 const asyncHandler_1 = __importDefault(require("../utils/asyncHandler"));
 const wishlistRouter = (0, express_1.Router)();
 const wishlistController = new wishlist_controller_1.default(new wishlist_service_impl_1.default());
-wishlistRouter.get("/", wishlistController.getWishlists);
+wishlistRouter.get("/", (0, asyncHandler_1.default)(wishlistController.getWishlists));
 wishlistRouter.post("/", validation_middleware_1.default.addWishlists, validation_middleware_1.ValidationMiddleware, (0, asyncHandler_1.default)(wishlistController.addWishlists));
-wishlistRouter.delete("/", validation_middleware_1.ValidationMiddleware, validation_middleware_1.default.removeWishlists, (0, asyncHandler_1.default)(wishlistController.removeWishlists));
+wishlistRouter.delete("/", validation_middleware_1.default.removeWishlists, validation_middleware_1.ValidationMiddleware, (0, asyncHandler_1.default)(wishlistController.removeWishlists));
 exports.default = wishlistRouter;

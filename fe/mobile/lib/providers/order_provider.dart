@@ -42,10 +42,12 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
   final Ref _ref;
 
   String? get _token => _ref.read(authStateProvider).accessToken;
+  String? get _refreshToken => _ref.read(authStateProvider).refreshToken;
   String? get _userId => _ref.read(authStateProvider).userId;
 
   Future<void> loadOrders() async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return;
 
@@ -53,6 +55,7 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
     final api = _ref.read(apiServiceProvider);
     final result = await api.getOrdersByUser(
       accessToken: token,
+      refreshToken: refreshToken,
       userId: userId,
     );
 
@@ -81,6 +84,7 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
     required Map<String, dynamic> delivery,
   }) async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return false;
 
@@ -88,6 +92,7 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
     final api = _ref.read(apiServiceProvider);
     final result = await api.createOrder(
       accessToken: token,
+      refreshToken: refreshToken,
       body: {
         'userId': userId,
         'item': items,
@@ -104,5 +109,24 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
       state = state.copyWith(isLoading: false, error: result.message);
       return false;
     }
+  }
+
+  void upsertOrder(Order order) {
+    final current = [...state.orders];
+    final index = current.indexWhere((item) => item.id == order.id);
+
+    if (index >= 0) {
+      current[index] = order;
+    } else {
+      current.insert(0, order);
+    }
+
+    current.sort((a, b) {
+      final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+      final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+      return bTime.compareTo(aTime);
+    });
+
+    state = state.copyWith(orders: current);
   }
 }

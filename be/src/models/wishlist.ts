@@ -1,4 +1,4 @@
-import mongoose, { Model, ObjectId } from "mongoose";
+import mongoose, { Document, Model, ObjectId } from "mongoose";
 
 export interface IWishlist extends Document {
   userId: ObjectId;

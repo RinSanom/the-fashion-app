@@ -1,3 +1,5 @@
+import 'package:mobile/utils/media_url.dart';
+
 class CartItem {
   const CartItem({
     required this.productId,
@@ -43,9 +45,13 @@ class CartItem {
       productName = product['name']?.toString();
       final images = product['images'];
       if (images is List && images.isNotEmpty && images.first is String) {
-        productImage = images.first as String;
+        productImage = resolveMediaUrl(images.first as String);
       }
     }
+
+    final resolvedImage = resolveMediaUrl(
+      json['image']?.toString() ?? productImage,
+    );
 
     return CartItem(
       productId: json['productId']?.toString() ?? '',
@@ -61,7 +67,7 @@ class CartItem {
       quantity: (json['quantity'] is num)
           ? (json['quantity'] as num).toInt()
           : 1,
-      image: json['image']?.toString() ?? productImage,
+      image: resolvedImage.isEmpty ? null : resolvedImage,
     );
   }
 

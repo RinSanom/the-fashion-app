@@ -1,18 +1,24 @@
 import { Router } from "express";
 import paymentController from "@controllers/payment.controller";
+import { hasRoles } from "@middlewares/hasRoles.middleware";
 
 const route = Router();
 
 route.post("/payment", paymentController.createPayment);
-
-route.get("/payment/:paymentId", paymentController.getPaymentById);
+route.post(
+  "/payments/create-checkout-session",
+  paymentController.createStripeCheckoutSession
+);
 
 route.get("/payment/order/:orderId", paymentController.getPaymentByOrderId);
 
-route.get("/payment", paymentController.getAllPayments);
+route.get("/payment/:paymentId", hasRoles("admin"), paymentController.getPaymentById);
+
+route.get("/payment", hasRoles("admin"), paymentController.getAllPayments);
 
 route.patch(
   "/payment/:paymentId/status",
+  hasRoles("admin"),
   paymentController.updatePaymentStatus
 );
 

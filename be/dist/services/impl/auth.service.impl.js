@@ -17,6 +17,8 @@ const user_1 = __importDefault(require("../../models/user"));
 const token_1 = __importDefault(require("../../models/token"));
 const conflictContent_exception_1 = __importDefault(require("../../exceptions/conflictContent.exception"));
 const unauthorized_exception_1 = __importDefault(require("../../exceptions/unauthorized.exception"));
+const badRequest_exception_1 = __importDefault(require("../../exceptions/badRequest.exception"));
+const redisUtils_1 = __importDefault(require("../../utils/redisUtils"));
 const jwtUtils_1 = require("../../utils/jwtUtils");
 class AuthServiceImpl {
     constructor() {
@@ -25,15 +27,16 @@ class AuthServiceImpl {
     }
     continueWithGoogle(credential) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
+            var _a;
             let user = yield this.model.findOne({ email: credential._json.email });
             if (!user) {
                 user = (yield this.model.create({
                     fullName: credential._json.name,
                     email: credential._json.email,
                     gender: (_a = credential.gender) !== null && _a !== void 0 ? _a : "not_specified",
-                    role: (_b = credential.role) !== null && _b !== void 0 ? _b : "user",
+                    role: "user",
                     status: "active",
+                    emailVerifiedAt: new Date(),
                     passwordHash: yield bcryptjs_1.default.genSalt(10),
                     oauthProviders: [
                         {
@@ -73,15 +76,16 @@ class AuthServiceImpl {
     }
     continueWithFacebook(credential) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
+            var _a;
             let user = yield this.model.findOne({ email: credential.email });
             if (!user) {
                 user = (yield this.model.create({
                     fullName: credential.name,
                     email: credential.email,
                     gender: (_a = credential.gender) !== null && _a !== void 0 ? _a : "not_specified",
-                    role: (_b = credential.role) !== null && _b !== void 0 ? _b : "user",
+                    role: "user",
                     status: "active",
+                    emailVerifiedAt: new Date(),
                     passwordHash: yield bcryptjs_1.default.genSalt(10),
                     oauthProviders: [
                         {
@@ -144,17 +148,23 @@ class AuthServiceImpl {
     }
     register(credential) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const existing = yield this.model.findOne({ email: credential.email });
+            var _a;
+            const email = credential.email.trim().toLowerCase();
+            const existing = yield this.model.findOne({ email });
             if (existing) {
                 throw new conflictContent_exception_1.default("email already exist");
             }
+            const hasValidVerificationToken = yield redisUtils_1.default.consumeVerificationToken(email, "register", credential.emailVerificationToken);
+            if (!hasValidVerificationToken) {
+                throw new badRequest_exception_1.default("Email verification is required before registration");
+            }
             const created = yield this.model.create({
                 fullName: credential.firstName + " " + credential.lastName,
-                email: credential.email,
+                email,
                 gender: (_a = credential.gender) !== null && _a !== void 0 ? _a : "not_specified",
-                role: (_b = credential.role) !== null && _b !== void 0 ? _b : "user",
+                role: "user",
                 status: "active",
+                emailVerifiedAt: new Date(),
                 passwordHash: yield bcryptjs_1.default.hash(credential.password, 10),
             });
             return created._id.toString();

@@ -18,7 +18,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
 
-  static const _categories = ['All', 'Trending', 'Men', 'Women', 'Sale'];
+  // static const _categories = ['All', 'Trending', 'Men', 'Women', 'Sale'];
 
   @override
   void initState() {
@@ -134,55 +134,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
 
               // Category chips
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 0, 8),
-                  child: SizedBox(
-                    height: 36,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 7),
-                      padding: const EdgeInsets.only(right: 24),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isActive = productsState.selectedCategory == cat;
-                        return GestureDetector(
-                          onTap: () => ref
-                              .read(productsProvider.notifier)
-                              .selectCategory(cat),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? AppColors.primary900
-                                  : AppColors.primary0,
-                              borderRadius: BorderRadius.circular(18),
-                              border: isActive
-                                  ? null
-                                  : Border.all(color: AppColors.primary100),
-                            ),
-                            child: Text(
-                              cat,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: isActive
-                                    ? AppColors.primary0
-                                    : AppColors.primary900,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+              // SliverToBoxAdapter(
+              //   child: Padding(
+              //     padding: const EdgeInsets.fromLTRB(24, 16, 0, 8),
+              //     child: SizedBox(
+              //       height: 36,
+              //       child: ListView.separated(
+              //         scrollDirection: Axis.horizontal,
+              //         itemCount: _categories.length,
+              //         separatorBuilder: (_, __) => const SizedBox(width: 7),
+              //         padding: const EdgeInsets.only(right: 24),
+              //         itemBuilder: (context, index) {
+              //           final cat = _categories[index];
+              //           final isActive = productsState.selectedCategory == cat;
+              //           return GestureDetector(
+              //             onTap: () => ref
+              //                 .read(productsProvider.notifier)
+              //                 .selectCategory(cat),
+              //             child: Container(
+              //               padding: const EdgeInsets.symmetric(
+              //                 horizontal: 20,
+              //                 vertical: 6,
+              //               ),
+              //               decoration: BoxDecoration(
+              //                 color: isActive
+              //                     ? AppColors.primary900
+              //                     : AppColors.primary0,
+              //                 borderRadius: BorderRadius.circular(18),
+              //                 border: isActive
+              //                     ? null
+              //                     : Border.all(color: AppColors.primary100),
+              //               ),
+              //               child: Text(
+              //                 cat,
+              //                 style: TextStyle(
+              //                   fontFamily: 'Poppins',
+              //                   fontWeight: FontWeight.w500,
+              //                   fontSize: 14,
+              //                   color: isActive
+              //                       ? AppColors.primary0
+              //                       : AppColors.primary900,
+              //                 ),
+              //               ),
+              //             ),
+              //           );
+              //         },
+              //       ),
+              //     ),
+              //   ),
+              // ),
 
               // Product grid
               if (productsState.products.isEmpty && productsState.isLoading)

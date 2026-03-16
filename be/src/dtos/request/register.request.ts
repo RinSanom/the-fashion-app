@@ -5,6 +5,7 @@ export interface registerRequest {
   firstName: string;
   lastName: string;
   email: string;
+  emailVerificationToken: string;
   password: string;
   confirmPassword: string;
   gender: "male" | "female" | "not_specified";

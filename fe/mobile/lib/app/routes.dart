@@ -26,6 +26,7 @@ import 'package:mobile/features/product/screens/product_detail_screen.dart';
 import 'package:mobile/features/saved/screens/saved_items_screen.dart';
 import 'package:mobile/features/search/screens/search_screen.dart';
 import 'package:mobile/models/order.dart';
+import 'package:mobile/models/verification_flow.dart';
 import 'package:mobile/providers/auth_provider.dart';
 
 class AppRoutes {
@@ -82,9 +83,11 @@ class AppRoutes {
           settings,
         );
       case verification:
-        final String? email = _emailFromArgs(settings.arguments);
+        final VerificationArgs? args = _verificationArgsFromArgs(
+          settings.arguments,
+        );
         return _buildRoute(
-          GuestGuard(child: VerificationScreen(email: email)),
+          GuestGuard(child: VerificationScreen(args: args)),
           settings,
         );
       case resetPassword:
@@ -95,8 +98,7 @@ class AppRoutes {
       case home:
         return _buildRoute(const AuthGuard(child: MainShell()), settings);
       case search:
-        return _buildRoute(
-            const AuthGuard(child: SearchScreen()), settings);
+        return _buildRoute(const AuthGuard(child: SearchScreen()), settings);
       case productDetail:
         final productId = settings.arguments as String? ?? '';
         return _buildRoute(
@@ -104,14 +106,11 @@ class AppRoutes {
           settings,
         );
       case cart:
-        return _buildRoute(
-            const AuthGuard(child: CartScreen()), settings);
+        return _buildRoute(const AuthGuard(child: CartScreen()), settings);
       case checkout:
-        return _buildRoute(
-            const AuthGuard(child: CheckoutScreen()), settings);
+        return _buildRoute(const AuthGuard(child: CheckoutScreen()), settings);
       case orders:
-        return _buildRoute(
-            const AuthGuard(child: OrdersScreen()), settings);
+        return _buildRoute(const AuthGuard(child: OrdersScreen()), settings);
       case trackOrder:
         final order = settings.arguments as Order?;
         if (order != null) {
@@ -121,29 +120,30 @@ class AppRoutes {
           );
         }
         return _buildRoute(
-          const Scaffold(
-            body: Center(child: Text('Order not found')),
-          ),
+          const Scaffold(body: Center(child: Text('Order not found'))),
           settings,
         );
       case account:
-        return _buildRoute(
-            const AuthGuard(child: AccountScreen()), settings);
+        return _buildRoute(const AuthGuard(child: AccountScreen()), settings);
       case savedItems:
         return _buildRoute(
-            const AuthGuard(child: SavedItemsScreen()), settings);
+          const AuthGuard(child: SavedItemsScreen()),
+          settings,
+        );
       case myDetails:
-        return _buildRoute(
-            const AuthGuard(child: MyDetailsScreen()), settings);
+        return _buildRoute(const AuthGuard(child: MyDetailsScreen()), settings);
       case address:
-        return _buildRoute(
-            const AuthGuard(child: AddressScreen()), settings);
+        return _buildRoute(const AuthGuard(child: AddressScreen()), settings);
       case notificationsSettings:
         return _buildRoute(
-            const AuthGuard(child: NotificationsSettingsScreen()), settings);
+          const AuthGuard(child: NotificationsSettingsScreen()),
+          settings,
+        );
       case paymentMethods:
         return _buildRoute(
-            const AuthGuard(child: PaymentMethodsScreen()), settings);
+          const AuthGuard(child: PaymentMethodsScreen()),
+          settings,
+        );
       case notifications:
         // Placeholder notifications screen
         return _buildRoute(
@@ -151,14 +151,17 @@ class AppRoutes {
           settings,
         );
       case faqs:
-        return _buildRoute(
-            const AuthGuard(child: FAQsScreen()), settings);
+        return _buildRoute(const AuthGuard(child: FAQsScreen()), settings);
       case helpCenter:
         return _buildRoute(
-            const AuthGuard(child: HelpCenterScreen()), settings);
+          const AuthGuard(child: HelpCenterScreen()),
+          settings,
+        );
       case customerService:
         return _buildRoute(
-            const AuthGuard(child: CustomerServiceScreen()), settings);
+          const AuthGuard(child: CustomerServiceScreen()),
+          settings,
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -210,14 +213,21 @@ class AppRoutes {
     );
   }
 
-  static String? _emailFromArgs(Object? arguments) {
+  static VerificationArgs? _verificationArgsFromArgs(Object? arguments) {
     if (arguments is VerificationArgs) {
-      return arguments.email;
+      return arguments;
     }
 
     if (arguments is Map<String, dynamic>) {
       final value = arguments['email'];
-      return value?.toString();
+      if (value == null) {
+        return null;
+      }
+
+      return VerificationArgs(
+        email: value.toString(),
+        purpose: VerificationPurpose.passwordReset,
+      );
     }
 
     return null;
@@ -312,11 +322,14 @@ class _NotificationsPlaceholder extends StatelessWidget {
                   ),
                   const Expanded(
                     child: Center(
-                      child: Text('Notifications',
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600)),
+                      child: Text(
+                        'Notifications',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 48),
@@ -324,9 +337,7 @@ class _NotificationsPlaceholder extends StatelessWidget {
               ),
             ),
             const Divider(color: AppColors.primary100),
-            const Expanded(
-              child: Center(child: Text('No notifications yet')),
-            ),
+            const Expanded(child: Center(child: Text('No notifications yet'))),
           ],
         ),
       ),

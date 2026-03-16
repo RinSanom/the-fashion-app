@@ -37,16 +37,22 @@ class CartNotifier extends StateNotifier<CartState> {
   final Ref _ref;
 
   String? get _token => _ref.read(authStateProvider).accessToken;
+  String? get _refreshToken => _ref.read(authStateProvider).refreshToken;
   String? get _userId => _ref.read(authStateProvider).userId;
 
   Future<void> loadCart() async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return;
 
     state = state.copyWith(isLoading: true, clearError: true);
     final api = _ref.read(apiServiceProvider);
-    final result = await api.getCart(accessToken: token, userId: userId);
+    final result = await api.getCart(
+      accessToken: token,
+      refreshToken: refreshToken,
+      userId: userId,
+    );
 
     if (!mounted) return;
 
@@ -71,6 +77,7 @@ class CartNotifier extends StateNotifier<CartState> {
     int quantity = 1,
   }) async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return false;
 
@@ -78,6 +85,7 @@ class CartNotifier extends StateNotifier<CartState> {
     final api = _ref.read(apiServiceProvider);
     final result = await api.addToCart(
       accessToken: token,
+      refreshToken: refreshToken,
       body: {
         'userId': userId,
         'productId': productId,
@@ -106,12 +114,14 @@ class CartNotifier extends StateNotifier<CartState> {
     required int quantity,
   }) async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return;
 
     final api = _ref.read(apiServiceProvider);
     await api.updateCartQuantity(
       accessToken: token,
+      refreshToken: refreshToken,
       body: {
         'userId': userId,
         'productId': productId,
@@ -125,12 +135,14 @@ class CartNotifier extends StateNotifier<CartState> {
 
   Future<void> removeItem(String variantId) async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return;
 
     final api = _ref.read(apiServiceProvider);
     await api.removeCartItem(
       accessToken: token,
+      refreshToken: refreshToken,
       body: {'userId': userId, 'variantId': variantId},
     );
 
@@ -139,11 +151,16 @@ class CartNotifier extends StateNotifier<CartState> {
 
   Future<void> clearCart() async {
     final token = _token;
+    final refreshToken = _refreshToken;
     final userId = _userId;
     if (token == null || userId == null) return;
 
     final api = _ref.read(apiServiceProvider);
-    await api.clearCart(accessToken: token, userId: userId);
+    await api.clearCart(
+      accessToken: token,
+      refreshToken: refreshToken,
+      userId: userId,
+    );
 
     if (mounted) {
       state = state.copyWith(cart: const Cart());

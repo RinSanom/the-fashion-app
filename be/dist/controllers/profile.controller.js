@@ -16,28 +16,30 @@ const profile_service_impl_1 = __importDefault(require("../services/impl/profile
 class ProfileController {
     constructor(profileService) {
         this.profileService = profileService;
-        this.delete = this.delete.bind(this);
         this.show = this.show.bind(this);
         this.update = this.update.bind(this);
     }
     show(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const user = req.user;
-            res.status(200).send({
+            const data = yield this.profileService.show(user._id);
+            res.status(200).json({
+                success: true,
                 message: "User profile retrieved successfully.",
-                isSuccess: true,
-                statusCode: 200,
-                data: {
-                    user: user,
-                },
+                data,
             });
         });
     }
     update(req, res) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    delete(req, res) {
-        return __awaiter(this, void 0, void 0, function* () { });
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = req.user;
+            const data = yield this.profileService.update(user._id, req.body);
+            res.status(200).json({
+                success: true,
+                message: "Profile updated successfully.",
+                data,
+            });
+        });
     }
 }
 exports.default = new ProfileController(new profile_service_impl_1.default());

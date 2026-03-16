@@ -46,7 +46,7 @@ class ProductModel {
         ],
         images: { type: [String], default: [] },
       },
-      { timestamps: true }
+      { timestamps: true },
     );
 
     this.model = mongoose.model<IProduct>("products", productSchema);

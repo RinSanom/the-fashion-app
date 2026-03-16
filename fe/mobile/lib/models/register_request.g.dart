@@ -11,6 +11,7 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       firstName: json['firstName'] as String,
       lastName: json['lastName'] as String,
       email: json['email'] as String,
+      emailVerificationToken: json['emailVerificationToken'] as String?,
       password: json['password'] as String,
       confirmPassword: json['confirmPassword'] as String,
       gender:
@@ -32,6 +33,7 @@ Map<String, dynamic> _$RegisterRequestToJson(RegisterRequest instance) =>
       'firstName': instance.firstName,
       'lastName': instance.lastName,
       'email': instance.email,
+      'emailVerificationToken': instance.emailVerificationToken,
       'password': instance.password,
       'confirmPassword': instance.confirmPassword,
       'gender': _$GenderEnumMap[instance.gender]!,

@@ -13,36 +13,68 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const wishlist_1 = __importDefault(require("../../models/wishlist"));
+const mongoose_1 = require("mongoose");
 class WishlistServiceImpl {
     constructor() {
         this.model = new wishlist_1.default().getModel();
     }
     addItemToWishlist(userId, item) {
         return __awaiter(this, void 0, void 0, function* () {
+            const existing = yield this.model.findOne({
+                userId: userId,
+                "item.productId": new mongoose_1.Types.ObjectId(item.productId),
+                "item.variantId": new mongoose_1.Types.ObjectId(item.variantId),
+            });
+            if (existing) {
+                return existing;
+            }
             return yield this.model.create({
                 userId: userId,
-            }, item);
+                item: {
+                    productId: new mongoose_1.Types.ObjectId(item.productId),
+                    variantId: new mongoose_1.Types.ObjectId(item.variantId),
+                },
+            });
         });
     }
-    removeItemFromWishlist(userId, itemId) {
+    removeItemFromWishlist(userId, productId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.model.deleteOne({
+            yield this.model.deleteMany({
                 userId: userId,
-                _id: itemId,
+                "item.productId": new mongoose_1.Types.ObjectId(productId),
             });
         });
     }
     getWishlistItems(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({
-                userId: userId,
-            });
+            const normalizedUserId = new mongoose_1.Types.ObjectId(userId.toString());
+            const items = yield this.model
+                .aggregate([
+                { $match: { userId: normalizedUserId } },
+                {
+                    $lookup: {
+                        from: "products",
+                        localField: "item.productId",
+                        foreignField: "_id",
+                        as: "product",
+                    },
+                },
+                {
+                    $unwind: {
+                        path: "$product",
+                        preserveNullAndEmptyArrays: true,
+                    },
+                },
+            ])
+                .exec();
+            return items;
         });
     }
     countWishlistItems(userId) {
         return __awaiter(this, void 0, void 0, function* () {
+            const normalizedUserId = new mongoose_1.Types.ObjectId(userId.toString());
             return yield this.model.countDocuments({
-                userId: userId,
+                userId: normalizedUserId,
             });
         });
     }

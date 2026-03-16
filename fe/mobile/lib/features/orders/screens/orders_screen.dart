@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/routes.dart';
@@ -6,6 +8,7 @@ import 'package:mobile/app/theme/app_text_styles.dart';
 import 'package:mobile/models/order.dart';
 import 'package:mobile/providers/auth_provider.dart';
 import 'package:mobile/providers/order_provider.dart';
+import 'package:mobile/providers/product_provider.dart';
 import 'package:mobile/widgets/app_button.dart';
 import 'package:mobile/widgets/app_screen_header.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -179,6 +182,9 @@ class _OrderCard extends ConsumerWidget {
   final bool isOngoing;
 
   bool get _requiresPayment => !order.paymentStatus.isPaid;
+  bool get _canReview => order.status == OrderStatus.delivered;
+  bool get _allItemsReviewed =>
+      order.items.isNotEmpty && order.items.every((item) => item.hasReview);
 
   Future<void> _continueStripePayment(
     BuildContext context,
@@ -235,6 +241,281 @@ class _OrderCard extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _openReviewFlow(BuildContext context, WidgetRef ref) async {
+    if (!_canReview) {
+      _showMessage(
+        context,
+        'Reviews are available only after the order is delivered.',
+      );
+      return;
+    }
+
+    if (order.items.isEmpty) {
+      _showMessage(context, 'No product found in this order.');
+      return;
+    }
+
+    if (order.items.length == 1) {
+      await _showReviewEditorSheet(context, ref, order.items.first);
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Select Item To Review',
+                    style: AppTextStyles.b1Medium.copyWith(fontSize: 18),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...order.items.map(
+                (item) => Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary100),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.productName,
+                              style: AppTextStyles.b1Medium.copyWith(
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${item.color} • ${item.size}',
+                              style: AppTextStyles.b2Regular.copyWith(
+                                color: AppColors.primary500,
+                              ),
+                            ),
+                            if (item.hasReview) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Current rating: ${item.reviewRating ?? 0}/5',
+                                style: AppTextStyles.b2Regular.copyWith(
+                                  color: AppColors.success,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          if (!context.mounted) return;
+                          unawaited(
+                            _showReviewEditorSheet(context, ref, item),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary900),
+                        ),
+                        child: Text(item.hasReview ? 'Edit' : 'Review'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showReviewEditorSheet(
+    BuildContext context,
+    WidgetRef ref,
+    OrderItem item,
+  ) async {
+    final commentController = TextEditingController(
+      text: item.reviewComment ?? '',
+    );
+    int selectedRating = item.reviewRating ?? 0;
+    bool isSubmitting = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    item.hasReview ? 'Edit Review' : 'Leave a Review',
+                    style: AppTextStyles.b1Medium.copyWith(fontSize: 18),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.productName,
+                style: AppTextStyles.b1Medium.copyWith(fontSize: 14),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${item.color} • ${item.size}',
+                style: AppTextStyles.b2Regular.copyWith(
+                  color: AppColors.primary500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'How was this product?',
+                style: AppTextStyles.b2Regular.copyWith(
+                  color: AppColors.primary500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (i) => GestureDetector(
+                    onTap: () => setSheetState(() => selectedRating = i + 1),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Icon(
+                        i < selectedRating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 36,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Write your review...',
+                  hintStyle: AppTextStyles.b2Regular.copyWith(
+                    color: AppColors.primary400,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary100),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary100),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppButton(
+                label: isSubmitting ? 'Saving...' : 'Submit Review',
+                isLoading: isSubmitting,
+                onPressed: selectedRating > 0 && !isSubmitting
+                    ? () async {
+                        final auth = ref.read(authStateProvider);
+                        final token = auth.accessToken;
+                        if (token == null) {
+                          _showMessage(context, 'Please login first.');
+                          return;
+                        }
+
+                        final comment = commentController.text.trim();
+                        if (comment.length < 3) {
+                          _showMessage(
+                            context,
+                            'Please write a short review comment.',
+                          );
+                          return;
+                        }
+
+                        setSheetState(() => isSubmitting = true);
+
+                        final api = ref.read(apiServiceProvider);
+                        final result = await api.submitProductReview(
+                          accessToken: token,
+                          refreshToken: auth.refreshToken,
+                          productId: item.productId,
+                          body: {
+                            'orderId': order.id,
+                            'rating': selectedRating,
+                            'comment': comment,
+                          },
+                        );
+
+                        if (!context.mounted) return;
+
+                        if (!result.isSuccess) {
+                          setSheetState(() => isSubmitting = false);
+                          _showMessage(
+                            context,
+                            result.message ?? 'Failed to submit review.',
+                          );
+                          return;
+                        }
+
+                        Navigator.pop(ctx);
+                        await ref.read(ordersProvider.notifier).loadOrders();
+                        ref.invalidate(productDetailProvider(item.productId));
+
+                        if (!context.mounted) return;
+
+                        _showMessage(context, 'Review saved successfully.');
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -368,17 +649,31 @@ class _OrderCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => _showReviewSheet(context),
-                icon: const Icon(Icons.star, size: 16, color: Colors.amber),
+                onPressed: _canReview
+                    ? () => _openReviewFlow(context, ref)
+                    : null,
+                icon: Icon(
+                  _canReview ? Icons.star : Icons.block,
+                  size: 16,
+                  color: _canReview ? Colors.amber : AppColors.primary400,
+                ),
                 label: Text(
-                  'Leave a Review',
+                  _canReview
+                      ? (_allItemsReviewed ? 'Edit Review' : 'Leave a Review')
+                      : 'Review Unavailable',
                   style: AppTextStyles.b2Regular.copyWith(
-                    color: AppColors.primary900,
+                    color: _canReview
+                        ? AppColors.primary900
+                        : AppColors.primary400,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary900),
+                  side: BorderSide(
+                    color: _canReview
+                        ? AppColors.primary900
+                        : AppColors.primary200,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -402,103 +697,4 @@ class _OrderCard extends ConsumerWidget {
     }
   }
 
-  void _showReviewSheet(BuildContext context) {
-    int selectedRating = 0;
-    final commentController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Leave a Review',
-                    style: AppTextStyles.b1Medium.copyWith(fontSize: 18),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'How was your order?',
-                style: AppTextStyles.b2Regular.copyWith(
-                  color: AppColors.primary500,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  5,
-                  (i) => GestureDetector(
-                    onTap: () => setSheetState(() => selectedRating = i + 1),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(
-                        i < selectedRating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 36,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: commentController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Write your review...',
-                  hintStyle: AppTextStyles.b2Regular.copyWith(
-                    color: AppColors.primary400,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary100),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primary100),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              AppButton(
-                label: 'Submit Review',
-                onPressed: selectedRating > 0
-                    ? () {
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Review submitted!'),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
-                      }
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
