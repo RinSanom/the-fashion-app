@@ -18,9 +18,7 @@ class ProductController {
         this.createProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const product = yield this.productService.createProduct(req.body);
-                res
-                    .status(201)
-                    .json({
+                res.status(201).json({
                     success: true,
                     message: "Product created successfully",
                     data: product,
@@ -35,7 +33,6 @@ class ProductController {
         });
         this.getAllProducts = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                // Extract filters from query params
                 const filters = {
                     name: req.query.name,
                     brand: req.query.brand,
@@ -63,9 +60,7 @@ class ProductController {
             }
             catch (error) {
                 console.error("Error fetching products:", error);
-                res
-                    .status(500)
-                    .json({
+                res.status(500).json({
                     success: false,
                     message: error.message || "Internal Server Error",
                 });
@@ -73,58 +68,76 @@ class ProductController {
         });
         this.getProductById = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const product = yield this.productService.getProductById(req.params.id);
-                if (product) {
-                    res
-                        .status(200)
-                        .json({
-                        success: true,
-                        data: product,
-                        message: "Product fetched successfully",
-                    });
+                const id = req.params.id;
+                if (typeof id !== "string") {
+                    res.status(400).json({ success: false, message: "Invalid id input." });
+                    return;
                 }
-                else {
+                const product = yield this.productService.getProductById(id);
+                if (!product) {
                     res.status(404).json({ success: false, message: "Product not found" });
+                    return;
                 }
+                res.status(200).json({
+                    success: true,
+                    data: product,
+                    message: "Product fetched successfully",
+                });
             }
             catch (error) {
-                res
-                    .status(500)
-                    .json({ success: false, message: "Internal Server Error" });
+                console.error("Error fetching product by id:", error);
+                res.status(500).json({
+                    success: false,
+                    message: (error === null || error === void 0 ? void 0 : error.message) || "Internal Server Error",
+                });
             }
         });
         this.updateProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const updatedProduct = yield this.productService.updateProduct(req.params.id, req.body);
-                res
-                    .status(200)
-                    .json({
+                const id = req.params.id;
+                if (typeof id !== "string") {
+                    res.status(400).json({ success: false, message: "Invalid id input." });
+                    return;
+                }
+                const updatedProduct = yield this.productService.updateProduct(id, req.body);
+                res.status(200).json({
                     success: true,
                     data: updatedProduct,
                     message: "Product updated successfully",
                 });
             }
             catch (error) {
-                res
-                    .status(500)
-                    .json({ success: false, message: "Internal Server Error" });
+                if ((error === null || error === void 0 ? void 0 : error.message) === "Product not found") {
+                    res.status(404).json({ success: false, message: "Product not found" });
+                    return;
+                }
+                res.status(500).json({
+                    success: false,
+                    message: (error === null || error === void 0 ? void 0 : error.message) || "Internal Server Error",
+                });
             }
         });
         this.deleteProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const productId = req.params.id;
-                yield this.productService.deleteProduct(productId);
+                const id = req.params.id;
+                if (typeof id !== "string") {
+                    res.status(400).json({ success: false, message: "Invalid id input." });
+                    return;
+                }
+                yield this.productService.deleteProduct(id);
                 res
                     .status(200)
                     .json({ success: true, message: "Product deleted successfully" });
-                if (!productId) {
-                    res.status(404).json({ success: false, message: "Product not found" });
-                }
             }
             catch (error) {
-                res
-                    .status(500)
-                    .json({ success: false, message: "Internal Server Error" });
+                if ((error === null || error === void 0 ? void 0 : error.message) === "Product not found") {
+                    res.status(404).json({ success: false, message: "Product not found" });
+                    return;
+                }
+                res.status(500).json({
+                    success: false,
+                    message: (error === null || error === void 0 ? void 0 : error.message) || "Internal Server Error",
+                });
             }
         });
         this.productService = new product_service_impl_1.default();

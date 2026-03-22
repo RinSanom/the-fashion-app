@@ -6,4 +6,7 @@ export interface IAuthService {
   register(credential: registerRequest): Promise<any | string>;
   logout(refreshToken: string): Promise<void>;
   refreshToken(refreshToken: string): Promise<any>;
+
+  continueWithGoogle(credential: any): Promise<any>;
+  continueWithFacebook(credential: any): Promise<any>;
 }

@@ -77,10 +77,34 @@ class AuthController {
         });
     }
     continueWithGoogle(req, res) {
-        return __awaiter(this, void 0, void 0, function* () { });
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = req.user;
+            const { access_token, refresh_token } = yield this.authService.continueWithGoogle(user);
+            res.status(200).send({
+                message: "Google OAuth successful",
+                isSuccess: true,
+                statusCode: 200,
+                data: {
+                    access_token: access_token,
+                    refresh_token: refresh_token,
+                },
+            });
+        });
     }
     continueWithFacebook(req, res) {
-        return __awaiter(this, void 0, void 0, function* () { });
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = req.user;
+            const { access_token, refresh_token } = yield this.authService.continueWithFacebook(user);
+            res.status(200).send({
+                message: "Facebook successful",
+                isSuccess: true,
+                statusCode: 200,
+                data: {
+                    access_token: access_token,
+                    refresh_token: refresh_token,
+                },
+            });
+        });
     }
 }
 exports.default = new AuthController(new auth_service_impl_1.default());

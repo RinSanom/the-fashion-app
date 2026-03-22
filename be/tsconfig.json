@@ -16,7 +16,9 @@
       "@ctypes/*": ["types/*"],
       "@dtos/*": ["dtos/*"],
       "@exceptions/*": ["exceptions/*"],
-      "@middlewares/*": ["middlewares/*"]
+      "@middlewares/*": ["middlewares/*"],
+      "@lib/*": ["lib/*"],
+      "@mapper/*": ["mapper/*"]
     }
   },
   "include": ["src"]

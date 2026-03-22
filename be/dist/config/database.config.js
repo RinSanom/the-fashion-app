@@ -14,28 +14,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 class DBConfig {
-    constructor() {
-        this.mongoURI =
-            process.env.MONGO_URI ||
-                "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
-    }
     connectDB() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                const mongoURI = process.env.MONGO_URI ||
+                    "mongodb://superuser:superuser@localhost:27017/theFashionAppDB?authSource=admin";
                 const options = {
                     authSource: process.env.MONGO_AUTH_DB || "admin",
-                    serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 8000,
-                    connectTimeoutMS: 8000,
-                    socketTimeoutMS: 15000,
-                    maxPoolSize: 1, // Serverless: use minimal connections
-                    minPoolSize: 0,
+                    serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) || 5000,
+                    connectTimeoutMS: 5000,
+                    socketTimeoutMS: 10000,
                 };
-                yield mongoose_1.default.connect(this.mongoURI, options);
+                yield mongoose_1.default.connect(mongoURI, options);
                 console.info("Database connected successfully.");
             }
             catch (err) {
                 console.error("Failed to connect to MongoDB:", err);
-                throw err; // Don't exit, throw for serverless to handle
+                throw err;
             }
         });
     }

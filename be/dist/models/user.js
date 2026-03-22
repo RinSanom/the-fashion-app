@@ -40,8 +40,11 @@ class UserModel {
             fullName: { type: String, required: true },
             email: { type: String, required: true, unique: true },
             passwordHash: { type: String, default: null },
+            emailVerifiedAt: { type: Date, default: null },
             role: { type: String, required: true, enum: ["user", "admin"] },
             gender: { type: String, default: "not_specified" },
+            phoneNumber: { type: String, default: null },
+            dateOfBirth: { type: Date, default: null },
             status: {
                 type: String,
                 required: true,

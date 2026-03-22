@@ -26,7 +26,8 @@ class CartController {
         });
         this.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const cart = yield this.cartService.getCartItemsByUserId(req.params.userId);
+                const id = req.params.userId;
+                const cart = yield this.cartService.getCartItemsByUserId(id);
                 res.status(200).json({ success: true, data: cart, message: "Cart fetched successfully" });
             }
             catch (error) {

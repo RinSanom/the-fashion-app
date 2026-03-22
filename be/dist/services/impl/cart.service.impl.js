@@ -46,8 +46,53 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const cart_1 = __importDefault(require("../../models/cart"));
+const product_1 = __importDefault(require("../../models/product"));
 const mongoose_1 = __importStar(require("mongoose"));
 class CartServiceImpl {
+    enrichCart(cart) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!cart) {
+                return null;
+            }
+            const productIds = Array.from(new Set(cart.item.map((item) => item.productId.toString())));
+            const products = yield product_1.default.getModel()
+                .find({ _id: { $in: productIds } })
+                .lean();
+            const productMap = new Map(products.map((product) => [product._id.toString(), product]));
+            return {
+                _id: cart._id,
+                userId: cart.userId,
+                status: cart.status,
+                item: cart.item.map((item) => {
+                    var _a, _b;
+                    const product = productMap.get(item.productId.toString());
+                    const image = Array.isArray(product === null || product === void 0 ? void 0 : product.images) && product.images.length > 0
+                        ? product.images[0]
+                        : null;
+                    return {
+                        productId: item.productId,
+                        variantId: item.variantId,
+                        size: item.size,
+                        color: item.color,
+                        price: item.price,
+                        quantity: item.quantity,
+                        productName: (_a = product === null || product === void 0 ? void 0 : product.name) !== null && _a !== void 0 ? _a : "Product",
+                        image,
+                        product: product
+                            ? {
+                                _id: product._id,
+                                productId: product.productId,
+                                name: product.name,
+                                images: (_b = product.images) !== null && _b !== void 0 ? _b : [],
+                            }
+                            : null,
+                    };
+                }),
+                createdAt: cart.createdAt,
+                updatedAt: cart.updatedAt,
+            };
+        });
+    }
     addToCart(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const cartModel = cart_1.default.getModel();
@@ -98,12 +143,13 @@ class CartServiceImpl {
     getCartItemsByUserId(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             const cartModel = cart_1.default.getModel();
-            return yield cartModel
+            const cart = yield cartModel
                 .findOne({
                 userId: new mongoose_1.Types.ObjectId(userId),
                 status: "active",
             })
                 .exec();
+            return this.enrichCart(cart);
         });
     }
     updateCartItemQuantity(userId, productId, variantId, quantity) {
@@ -117,8 +163,8 @@ class CartServiceImpl {
                 throw new Error("Cart not found");
             }
             const itemIndex = cart.item.findIndex((item) => {
-                item.productId.toString() === productId &&
-                    item.variantId.toString() === variantId;
+                return (item.productId.toString() === productId &&
+                    item.variantId.toString() === variantId);
             });
             if (itemIndex === -1) {
                 throw new Error("Item not found in cart");

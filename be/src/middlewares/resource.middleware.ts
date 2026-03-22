@@ -13,7 +13,7 @@ import bcrypt from "bcryptjs";
 const routeValidation: RequestHandler = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const authHeader = req.headers.authorization;
@@ -24,8 +24,22 @@ const routeValidation: RequestHandler = async (
     if (
       permitRoutes(req, "POST", "/api/v1/auth/*") ||
       permitRoutes(req, "GET", "/") ||
+      permitRoutes(req, "GET", "/api-doc") ||
+      permitRoutes(req, "GET", "/api-doc/*") ||
+      permitRoutes(req, "GET", "/api-docs") ||
+      permitRoutes(req, "GET", "/api-docs/*") ||
+      permitRoutes(req, "GET", "/api-doc.json") ||
+      permitRoutes(req, "GET", "/api-docs.json") ||
       permitRoutes(req, "POST", "/api/v1/send-verification-code") ||
-      permitRoutes(req, "POST", "/api/v1/verify-code")
+      permitRoutes(req, "POST", "/api/v1/verify-code") ||
+      permitRoutes(req, "GET", "/api/v1/products") ||
+      permitRoutes(req, "GET", "/api/v1/products/*") ||
+      permitRoutes(req, "GET", "/api/v1/cart") ||
+      permitRoutes(req, "GET", "/api/v1/cart/*") ||
+      permitRoutes(req, "POST", "/api/v1/order") ||
+      permitRoutes(req, "POST", "/api/v1/order/*") ||
+      permitRoutes(req, "POST", "/api/v1/payment") ||
+      permitRoutes(req, "POST", "/api/v1/payment/*")
     ) {
       return next();
     }
@@ -67,7 +81,7 @@ const routeValidation: RequestHandler = async (
         if (
           !(await bcrypt.compare(
             refresh_token as string,
-            storedToken.tokenHash as string
+            storedToken.tokenHash as string,
           ))
         ) {
           throw new ForbiddenException();
@@ -80,6 +94,8 @@ const routeValidation: RequestHandler = async (
 
     const user = await userModel.getModel().findById(decoded.id).lean();
     if (!user) throw new ForbiddenException();
+
+    (req as any).user = user;
 
     next();
   } catch (err) {

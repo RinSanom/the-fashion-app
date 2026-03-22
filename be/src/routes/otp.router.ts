@@ -12,7 +12,6 @@ otpRouter.post(
   "/send-verification-code",
   validationMiddleware.OTP_ctr_sendMailVerificationCode,
   ValidationMiddleware,
-  otpController.sendVerificationCode,
   asyncHandler(otpController.sendVerificationCode)
 );
 
@@ -20,7 +19,6 @@ otpRouter.post(
   "/verify-code",
   validationMiddleware.OTP_ctr_verifyCode,
   ValidationMiddleware,
-  otpController.verifyCode,
   asyncHandler(otpController.verifyCode)
 );
 

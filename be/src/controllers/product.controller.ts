@@ -12,13 +12,11 @@ class ProductController {
   createProduct = async (req: Request, res: Response): Promise<void> => {
     try {
       const product = await this.productService.createProduct(req.body);
-      res
-        .status(201)
-        .json({
-          success: true,
-          message: "Product created successfully",
-          data: product,
-        });
+      res.status(201).json({
+        success: true,
+        message: "Product created successfully",
+        data: product,
+      });
     } catch (error) {
       console.error("Error creating product:", error);
       res
@@ -29,7 +27,6 @@ class ProductController {
 
   getAllProducts = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Extract filters from query params
       const filters: FilterProductDTO = {
         name: req.query.name as string,
         brand: req.query.brand as string,
@@ -57,71 +54,92 @@ class ProductController {
       });
     } catch (error: any) {
       console.error("Error fetching products:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: error.message || "Internal Server Error",
-        });
+      res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
     }
   };
 
   getProductById = async (req: Request, res: Response): Promise<void> => {
     try {
-      const product = await this.productService.getProductById(req.params.id);
-      if (product) {
-        res
-          .status(200)
-          .json({
-            success: true,
-            data: product,
-            message: "Product fetched successfully",
-          });
-      } else {
-        res.status(404).json({ success: false, message: "Product not found" });
+      const id = req.params.id;
+      if (typeof id !== "string") {
+        res.status(400).json({ success: false, message: "Invalid id input." });
+        return;
       }
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+
+      const product = await this.productService.getProductById(id);
+
+      if (!product) {
+        res.status(404).json({ success: false, message: "Product not found" });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: product,
+        message: "Product fetched successfully",
+      });
+    } catch (error: any) {
+      console.error("Error fetching product by id:", error);
+      res.status(500).json({
+        success: false,
+        message: error?.message || "Internal Server Error",
+      });
     }
   };
 
   updateProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-      const updatedProduct = await this.productService.updateProduct(
-        req.params.id,
-        req.body
-      );
-      res
-        .status(200)
-        .json({
-          success: true,
-          data: updatedProduct,
-          message: "Product updated successfully",
-        });
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+      const id = req.params.id;
+      if (typeof id !== "string") {
+        res.status(400).json({ success: false, message: "Invalid id input." });
+        return;
+      }
+
+      const updatedProduct = await this.productService.updateProduct(id, req.body);
+
+      res.status(200).json({
+        success: true,
+        data: updatedProduct,
+        message: "Product updated successfully",
+      });
+    } catch (error: any) {
+      if (error?.message === "Product not found") {
+        res.status(404).json({ success: false, message: "Product not found" });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: error?.message || "Internal Server Error",
+      });
     }
   };
 
   deleteProduct = async (req: Request, res: Response): Promise<void> => {
     try {
-      const productId = req.params.id;
-      await this.productService.deleteProduct(productId);
+      const id = req.params.id;
+      if (typeof id !== "string") {
+        res.status(400).json({ success: false, message: "Invalid id input." });
+        return;
+      }
+
+      await this.productService.deleteProduct(id);
       res
         .status(200)
         .json({ success: true, message: "Product deleted successfully" });
-
-      if (!productId) {
+    } catch (error: any) {
+      if (error?.message === "Product not found") {
         res.status(404).json({ success: false, message: "Product not found" });
+        return;
       }
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+
+      res.status(500).json({
+        success: false,
+        message: error?.message || "Internal Server Error",
+      });
     }
   };
 }

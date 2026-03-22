@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   category: string;
   status: "available" | "out_of_stock";
   variants: ProductVariant[];
+  images: string[];
 }
 
 class ProductModel {
@@ -43,8 +44,9 @@ class ProductModel {
             stock: { type: Number, default: 0 },
           },
         ],
+        images: { type: [String], default: [] },
       },
-      { timestamps: true }
+      { timestamps: true },
     );
 
     this.model = mongoose.model<IProduct>("products", productSchema);

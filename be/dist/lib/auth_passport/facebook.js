@@ -18,7 +18,7 @@ passport_1.default.use(new passport_facebook_1.Strategy({
     clientID: process.env.FACEBOOK_CLIENT_ID || "",
     clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
     callbackURL: process.env.FACEBOOK_CALLBACK_URL || "",
-    profileFields: ["id", "emails", "name"],
+    profileFields: ["id", "emails"],
 }, (_, __, profile, done) => __awaiter(void 0, void 0, void 0, function* () {
     const email = profile.emails;
     if (!email)

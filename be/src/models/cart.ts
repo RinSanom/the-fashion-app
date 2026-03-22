@@ -11,6 +11,8 @@ export interface ICart extends Document {
     quantity: number;
   }[];
   status: "active" | "inactive";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 class CartModel {
